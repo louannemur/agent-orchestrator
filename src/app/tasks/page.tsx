@@ -53,7 +53,7 @@ export default function TasksPage() {
   });
 
   const { createTask, isCreating } = useCreateTask();
-  const { runTask, cancelTask, retryTask, isActing } = useTaskActions();
+  const { runTask, cancelTask, isActing } = useTaskActions();
 
   // Enable notifications for task changes
   useNotifications({ tasks });
