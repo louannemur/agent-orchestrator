@@ -1,0 +1,14 @@
+{
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "ANTHROPIC_API_KEY": "@anthropic-api-key"
+  },
+  "crons": [
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

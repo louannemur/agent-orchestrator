@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum AgentStatus {
+  IDLE
+  WORKING
+  PAUSED
+  COMPLETED
+  FAILED
+  STUCK
+}
+
+enum TaskStatus {
+  QUEUED
+  ASSIGNED
+  IN_PROGRESS
+  VERIFYING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum VerificationStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+enum TaskComplexity {
+  SIMPLE
+  MEDIUM
+  COMPLEX
+}
+
+enum LogType {
+  THINKING
+  TOOL_CALL
+  TOOL_RESULT
+  ERROR
+  STATUS_CHANGE
+  INFO
+}
+
+enum ExceptionType {
+  VERIFICATION_FAILED
+  AGENT_STUCK
+  CONFLICT_DETECTED
+  HIGH_RISK_CODE
+  UNKNOWN_ERROR
+}
+
+enum ExceptionSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum ExceptionStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+// ============================================================================
+// Models
+// ============================================================================
+
+model Agent {
+  id               String      @id @default(uuid()) @db.Uuid
+  name             String?
+  status           AgentStatus @default(IDLE)
+  currentTaskId    String?     @unique @db.Uuid
+  branchName       String?
+  conversationId   String?
+  totalTokensUsed  Int         @default(0)
+  lastActivityAt   DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  tasksCompleted   Int         @default(0)
+  tasksFailed      Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // Relations
+  currentTask Task?              @relation("CurrentTask", fields: [currentTaskId], references: [id])
+  logs        AgentLog[]
+  fileLocks   FileLock[]
+  exceptions  Exception[]
+  tasks       Task[]             @relation("AssignedTasks")
+
+  @@index([status])
+  @@index([lastActivityAt])
+}
+
+model Task {
+  id                   String             @id @default(uuid()) @db.Uuid
+  title                String             @db.VarChar(500)
+  description          String             @db.Text
+  priority             Int                @default(2) @db.SmallInt
+  riskLevel            RiskLevel          @default(MEDIUM)
+  status               TaskStatus         @default(QUEUED)
+  assignedAgentId      String?            @db.Uuid
+  assignedAt           DateTime?
+  branchName           String?
+  commitSha            String?            @db.VarChar(40)
+  prUrl                String?            @db.VarChar(500)
+  verificationStatus   VerificationStatus @default(PENDING)
+  verificationAttempts Int                @default(0)
+  estimatedComplexity  TaskComplexity?
+  filesHint            String[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  completedAt          DateTime?
+
+  // Relations
+  assignedAgent       Agent?               @relation("AssignedTasks", fields: [assignedAgentId], references: [id])
+  currentAgent        Agent?               @relation("CurrentTask")
+  verificationResults VerificationResult[]
+  logs                AgentLog[]
+  fileLocks           FileLock[]
+  exceptions          Exception[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([assignedAgentId])
+  @@index([createdAt])
+  @@index([status, priority])
+}
+
+model FileLock {
+  id         String    @id @default(uuid()) @db.Uuid
+  filePath   String    @unique
+  agentId    String    @db.Uuid
+  taskId     String?   @db.Uuid
+  acquiredAt DateTime  @default(now())
+  expiresAt  DateTime?
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task  Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([agentId])
+  @@index([expiresAt])
+}
+
+model VerificationResult {
+  id                  String   @id @default(uuid()) @db.Uuid
+  taskId              String   @db.Uuid
+  attemptNumber       Int
+  passed              Boolean
+  confidenceScore     Decimal  @db.Decimal(3, 2)
+  syntaxPassed        Boolean?
+  typesPassed         Boolean?
+  lintPassed          Boolean?
+  testsPassed         Boolean?
+  testsTotal          Int?
+  testsFailed         Int?
+  semanticScore       Decimal? @db.Decimal(3, 2)
+  semanticExplanation String?  @db.Text
+  failures            Json     @default("[]")
+  recommendations     String[]
+  createdAt           DateTime @default(now())
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([taskId, attemptNumber])
+}
+
+model AgentLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  agentId   String   @db.Uuid
+  taskId    String?  @db.Uuid
+  logType   LogType
+  content   String   @db.Text
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  // Relations
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task  Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([agentId, createdAt(sort: Desc)])
+  @@index([taskId])
+  @@index([logType])
+}
+
+model Exception {
+  id              String            @id @default(uuid()) @db.Uuid
+  exceptionType   ExceptionType
+  agentId         String?           @db.Uuid
+  taskId          String?           @db.Uuid
+  severity        ExceptionSeverity
+  title           String            @db.VarChar(500)
+  description     String?           @db.Text
+  suggestedAction String?           @db.Text
+  status          ExceptionStatus   @default(OPEN)
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolutionNotes String?           @db.Text
+  createdAt       DateTime          @default(now())
+
+  // Relations
+  agent Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  task  Task?  @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([severity])
+  @@index([agentId])
+  @@index([taskId])
+  @@index([createdAt])
+}
