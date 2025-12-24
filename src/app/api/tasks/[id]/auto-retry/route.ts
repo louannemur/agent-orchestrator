@@ -202,7 +202,7 @@ export async function POST(
     }
 
     // Check retry count
-    const currentAttempts = task.retryCount ?? 0;
+    const currentAttempts = task.verificationAttempts ?? 0;
     if (currentAttempts >= 3) {
       return errorResponse(
         `Task has already been retried ${currentAttempts} times. Maximum retries (3) exceeded.`,
@@ -210,8 +210,14 @@ export async function POST(
       );
     }
 
+    // Get error info from latest verification result
+    const latestVerification = task.verificationResults?.[0];
+    const errorInfo = latestVerification?.failures
+      ? JSON.stringify(latestVerification.failures)
+      : "";
+
     // Determine retry strategy based on failure type
-    const failureType = classifyFailure(task.error ?? "");
+    const failureType = classifyFailure(errorInfo);
     const strategy = getRetryStrategy(failureType);
 
     if (!strategy.shouldRetry) {
@@ -229,18 +235,16 @@ export async function POST(
       );
     }
 
-    // Reset task for retry (increment retry count but don't reset it)
+    // Reset task for retry
     await db.task.update({
       where: { id },
       data: {
         status: TaskStatus.QUEUED,
         verificationStatus: VerificationStatus.PENDING,
-        verificationAttempts: 0,
-        retryCount: currentAttempts + 1,
+        verificationAttempts: currentAttempts + 1,
         assignedAgentId: null,
         assignedAt: null,
         completedAt: null,
-        error: null,
       },
     });
 
