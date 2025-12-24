@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, AlertCircle, Bot } from "lucide-react";
+import { Activity, AlertCircle } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
