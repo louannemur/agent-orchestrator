@@ -185,7 +185,7 @@ export async function POST(
     const task = await db.task.findUnique({
       where: { id },
       include: {
-        verificationResult: true,
+        verificationResults: true,
       },
     });
 
