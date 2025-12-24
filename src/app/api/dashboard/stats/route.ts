@@ -125,7 +125,7 @@ export async function GET() {
         where: {
           status: TaskStatus.COMPLETED,
           completedAt: { not: null },
-          startedAt: { not: null },
+          assignedAt: { not: null },
         },
         _avg: {
           // We can't do date math in Prisma aggregate, so we'll handle this differently
@@ -158,10 +158,10 @@ export async function GET() {
       where: {
         status: TaskStatus.COMPLETED,
         completedAt: { not: null },
-        startedAt: { not: null },
+        assignedAt: { not: null },
       },
       select: {
-        startedAt: true,
+        assignedAt: true,
         completedAt: true,
       },
       take: 100,
@@ -170,10 +170,10 @@ export async function GET() {
 
     if (recentCompleted.length > 0) {
       const times = recentCompleted
-        .filter((t) => t.startedAt && t.completedAt)
+        .filter((t) => t.assignedAt && t.completedAt)
         .map(
           (t) =>
-            new Date(t.completedAt!).getTime() - new Date(t.startedAt!).getTime()
+            new Date(t.completedAt!).getTime() - new Date(t.assignedAt!).getTime()
         );
 
       if (times.length > 0) {
