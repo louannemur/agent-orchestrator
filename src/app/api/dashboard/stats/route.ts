@@ -69,7 +69,7 @@ export async function GET() {
       openExceptions,
       completedToday,
       failedToday,
-      avgCompletionTime,
+      _avgCompletionTime,
     ] = await Promise.all([
       // Agent counts by status
       db.agent.groupBy({
