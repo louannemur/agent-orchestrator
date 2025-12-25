@@ -95,8 +95,9 @@ export function useAgentLogs(options: UseAgentLogsOptions): UseAgentLogsResult {
           throw new Error("Failed to fetch logs");
         }
 
-        const { data, pagination } = await response.json();
-        const newLogs = data || [];
+        const { data } = await response.json();
+        const newLogs = data?.logs || [];
+        const pagination = data?.pagination;
 
         if (loadMore) {
           setLogs((prev) => [...prev, ...newLogs]);
