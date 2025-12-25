@@ -2,25 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { handleError, ValidationError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { createTaskRequestSchema, TaskStatus } from "@/types";
-
-// ============================================================================
-// Response Helpers
-// ============================================================================
-
-function jsonResponse<T>(
-  data: T,
-  status = 200
-): NextResponse<{ data: T }> {
-  return NextResponse.json({ data }, { status });
-}
-
-function errorResponse(
-  message: string,
-  status = 400
-): NextResponse<{ error: string; message: string }> {
-  return NextResponse.json({ error: message, message }, { status });
-}
 
 // ============================================================================
 // Query Schema
@@ -38,6 +22,9 @@ const querySchema = z.object({
 // ============================================================================
 
 export async function GET(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") || undefined;
+  const log = logger.child({ requestId, path: "/api/tasks" });
+
   try {
     const { searchParams } = new URL(request.url);
 
@@ -50,9 +37,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!queryResult.success) {
-      return errorResponse(
-        `Invalid query parameters: ${queryResult.error.message}`,
-        400
+      throw new ValidationError(
+        "Invalid query parameters",
+        queryResult.error.flatten().fieldErrors
       );
     }
 
@@ -122,18 +109,21 @@ export async function GET(request: NextRequest) {
       },
     }));
 
-    return jsonResponse({
-      tasks: data,
-      pagination: {
-        limit,
-        offset,
-        totalCount,
-        hasMore: offset + tasks.length < totalCount,
+    log.debug("Tasks fetched", { count: data.length, totalCount });
+
+    return NextResponse.json({
+      data: {
+        tasks: data,
+        pagination: {
+          limit,
+          offset,
+          totalCount,
+          hasMore: offset + tasks.length < totalCount,
+        },
       },
     });
   } catch (error) {
-    console.error("[GET /api/tasks] Error:", error);
-    return errorResponse("Failed to fetch tasks", 500);
+    return handleError(error, "GET /api/tasks", requestId);
   }
 }
 
@@ -142,6 +132,9 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") || undefined;
+  const log = logger.child({ requestId, path: "/api/tasks" });
+
   try {
     const body = await request.json();
 
@@ -149,9 +142,9 @@ export async function POST(request: NextRequest) {
     const parseResult = createTaskRequestSchema.safeParse(body);
 
     if (!parseResult.success) {
-      return errorResponse(
-        `Invalid request body: ${parseResult.error.message}`,
-        400
+      throw new ValidationError(
+        "Invalid request body",
+        parseResult.error.flatten().fieldErrors
       );
     }
 
@@ -169,9 +162,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return jsonResponse(task, 201);
+    log.info("Task created", { taskId: task.id, title });
+
+    return NextResponse.json({ data: task }, { status: 201 });
   } catch (error) {
-    console.error("[POST /api/tasks] Error:", error);
-    return errorResponse("Failed to create task", 500);
+    return handleError(error, "POST /api/tasks", requestId);
   }
 }
