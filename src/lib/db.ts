@@ -5,8 +5,7 @@ import ws from "ws";
 
 // Configure WebSocket for Neon serverless
 neonConfig.webSocketConstructor = ws;
-// Set connection timeout to avoid hanging
-neonConfig.connectionTimeoutMillis = 5000;
+// Use fetch for pooled queries (better for serverless)
 neonConfig.poolQueryViaFetch = true;
 
 const createPrismaClient = () => {
