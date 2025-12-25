@@ -109,9 +109,13 @@ export function TaskHeader({
   onAutoRetry,
   isActing,
 }: TaskHeaderProps) {
-  const statusCfg = statusConfig[task.status] || statusConfig.QUEUED;
-  const priorityCfg = priorityConfig[task.priority] || priorityConfig[2];
-  const riskCfg = riskConfig[task.riskLevel] || riskConfig.MEDIUM;
+  const defaultStatus = { color: "text-zinc-400", bgColor: "bg-zinc-500/10 border-zinc-500/20", label: "Unknown" };
+  const defaultPriority = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Normal" };
+  const defaultRisk = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+
+  const statusCfg = statusConfig[task.status] ?? defaultStatus;
+  const priorityCfg = priorityConfig[task.priority] ?? defaultPriority;
+  const riskCfg = riskConfig[task.riskLevel] ?? defaultRisk;
 
   const canRun = task.status === "QUEUED";
   const canCancel = task.status === "QUEUED";
