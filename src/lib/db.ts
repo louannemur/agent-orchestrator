@@ -1,6 +1,10 @@
-import { Pool } from "@neondatabase/serverless";
+import { neonConfig, Pool } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+
+// Use fetch mode for serverless (no WebSocket needed)
+// Note: This is deprecated but still required for proper initialization
+neonConfig.fetchConnectionCache = true;
 
 const createPrismaClient = () => {
   let connectionString = process.env.DATABASE_URL;
@@ -10,12 +14,9 @@ const createPrismaClient = () => {
   }
 
   // Remove channel_binding parameter if present (incompatible with serverless driver)
-  // Use regex to avoid URL encoding issues with special characters in passwords
-  connectionString = connectionString
-    .replace(/(\?|&)channel_binding=[^&]*(&|$)/g, (_, prefix, suffix) =>
-      prefix === "?" && suffix === "&" ? "?" : suffix === "&" ? "" : ""
-    )
-    .replace(/\?$/, ""); // Remove trailing ? if channel_binding was the only param
+  connectionString = connectionString.replace(/&?channel_binding=[^&]*/gi, "");
+  // Clean up any trailing ? or &
+  connectionString = connectionString.replace(/[?&]$/, "");
 
   // Create pool for Neon serverless
   const pool = new Pool({ connectionString });
