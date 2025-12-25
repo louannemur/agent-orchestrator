@@ -106,7 +106,8 @@ export function AgentCard({
   isActing,
 }: AgentCardProps) {
   const [showMenu, setShowMenu] = useState(false);
-  const config = statusConfig[agent.status];
+  const defaultConfig = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const config = statusConfig[agent.status] ?? defaultConfig;
 
   const isWorking = agent.status === "WORKING";
   const isPaused = agent.status === "PAUSED";

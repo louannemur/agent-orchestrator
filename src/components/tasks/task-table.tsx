@@ -140,8 +140,10 @@ function TaskRow({
   isActing?: boolean;
 }) {
   const [showMenu, setShowMenu] = useState(false);
-  const statusCfg = statusConfig[task.status];
-  const priorityCfg = priorityConfig[task.priority] || priorityConfig[2];
+  const defaultStatus = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const defaultPriority = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Normal" };
+  const statusCfg = statusConfig[task.status] ?? defaultStatus;
+  const priorityCfg = priorityConfig[task.priority] ?? defaultPriority;
 
   const canRun = task.status === "QUEUED";
   const canCancel = task.status === "QUEUED";

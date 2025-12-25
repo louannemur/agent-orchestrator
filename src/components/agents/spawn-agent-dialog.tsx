@@ -47,8 +47,9 @@ export function SpawnAgentDialog({
         const { data } = await response.json();
         setTasks(data || []);
         // Auto-select first task if available
-        if (data?.length > 0 && !selectedTaskId) {
-          setSelectedTaskId(data[0].id);
+        const firstTask = data?.[0];
+        if (firstTask && !selectedTaskId) {
+          setSelectedTaskId(firstTask.id);
         }
       }
     } catch {

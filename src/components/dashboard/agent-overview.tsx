@@ -54,7 +54,8 @@ const statusConfig: Record<
 // ============================================================================
 
 function AgentDot({ agent }: { agent: AgentStatus }) {
-  const config = statusConfig[agent.status];
+  const defaultConfig = { color: "bg-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const config = statusConfig[agent.status] ?? defaultConfig;
 
   return (
     <Link
@@ -96,7 +97,8 @@ function StatusCount({
   status: AgentStatus["status"];
   count: number;
 }) {
-  const config = statusConfig[status];
+  const defaultConfig = { color: "bg-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const config = statusConfig[status] ?? defaultConfig;
 
   return (
     <div className="flex items-center gap-2">

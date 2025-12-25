@@ -116,7 +116,8 @@ export function AgentHeader({
   onStop,
   isActing,
 }: AgentHeaderProps) {
-  const config = statusConfig[agent.status];
+  const defaultConfig = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const config = statusConfig[agent.status] ?? defaultConfig;
   const elapsed = useElapsedTime(agent.startedAt);
 
   const isWorking = agent.status === "WORKING";

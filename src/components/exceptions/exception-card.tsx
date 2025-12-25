@@ -116,8 +116,10 @@ export function ExceptionCard({
 }: ExceptionCardProps) {
   const [showActions, setShowActions] = useState(false);
 
-  const severity = severityConfig[exception.severity];
-  const status = statusConfig[exception.status];
+  const defaultSeverity = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", borderColor: "border-zinc-500/20", label: "Unknown" };
+  const defaultStatus = { color: "text-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const severity = severityConfig[exception.severity] ?? defaultSeverity;
+  const status = statusConfig[exception.status] ?? defaultStatus;
 
   const isCritical = exception.severity === "CRITICAL";
   const isOpen = exception.status === "OPEN";
