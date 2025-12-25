@@ -4,6 +4,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { ExceptionSeverity, ExceptionStatus } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 // ============================================================================
 // Response Helpers
 // ============================================================================

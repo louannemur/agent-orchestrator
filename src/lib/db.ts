@@ -1,9 +1,6 @@
-import { neonConfig, Pool } from "@neondatabase/serverless";
+import { Pool } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
-
-// Use fetch mode for serverless (no WebSocket needed)
-neonConfig.fetchConnectionCache = true;
 
 const createPrismaClient = () => {
   let connectionString = process.env.DATABASE_URL;
