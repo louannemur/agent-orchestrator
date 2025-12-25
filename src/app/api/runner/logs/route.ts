@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       taskId,
       logType: log.logType,
       content: log.content.slice(0, 50000), // Truncate very long content
-      metadata: log.metadata ? JSON.parse(JSON.stringify(log.metadata)) : undefined,
+      metadata: log.metadata ? JSON.parse(JSON.stringify(log.metadata)) : null,
       createdAt: log.timestamp ? new Date(log.timestamp) : new Date(),
     }));
 
