@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Filter, Loader2, Search, X } from "lucide-react";
+import { CheckCircle2, Filter, Loader2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type {
