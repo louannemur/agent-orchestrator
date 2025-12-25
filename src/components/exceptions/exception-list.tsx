@@ -210,10 +210,10 @@ export function ExceptionList({
 }: ExceptionListProps) {
   // Group exceptions by status
   const groupedExceptions = useMemo(() => {
-    const groups: Record<string, ExceptionData[]> = {
-      OPEN: [],
-      ACKNOWLEDGED: [],
-      RESOLVED_DISMISSED: [],
+    const groups = {
+      OPEN: [] as ExceptionData[],
+      ACKNOWLEDGED: [] as ExceptionData[],
+      RESOLVED_DISMISSED: [] as ExceptionData[],
     };
 
     exceptions.forEach((exception) => {
