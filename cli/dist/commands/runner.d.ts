@@ -5,6 +5,7 @@ export declare function runnerRegisterCommand(options: RunnerRegisterOptions): P
 export interface RunnerStartOptions {
     dir?: string;
     once?: boolean;
+    useClaudeCode?: boolean;
 }
 export declare function runnerStartCommand(options: RunnerStartOptions): Promise<void>;
 export declare function runnerStatusCommand(): Promise<void>;

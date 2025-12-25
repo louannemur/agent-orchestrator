@@ -422,6 +422,93 @@ export async function runnerRegisterCommand(options) {
         process.exit(1);
     }
 }
+// ============================================================================
+// Claude Code Executor
+// ============================================================================
+async function checkClaudeCodeAvailable() {
+    try {
+        await execAsync("claude --version", { timeout: 5000 });
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+async function executeTaskWithClaudeCode(task, agent, workingDir, apiClient) {
+    const prompt = `You are working on a software task. Here are the details:
+
+**Task:** ${task.title}
+
+**Description:**
+${task.description}
+
+**Working Directory:** ${workingDir}
+${task.filesHint?.length ? `\n**Relevant files:**\n${task.filesHint.map((f) => `- ${f}`).join("\n")}` : ""}
+
+Please complete this task. When done, provide a brief summary of what you accomplished.`;
+    // Send initial log
+    try {
+        await apiClient.sendLogs(agent.id, task.id, [{
+                logType: "STATUS_CHANGE",
+                content: `Starting task with Claude Code: ${task.title}`,
+                timestamp: new Date().toISOString(),
+            }]);
+    }
+    catch {
+        // Ignore log errors
+    }
+    // Send heartbeat periodically
+    const heartbeatInterval = setInterval(async () => {
+        try {
+            await apiClient.sendHeartbeat(agent.id, task.id);
+        }
+        catch {
+            // Ignore heartbeat errors
+        }
+    }, 30000);
+    try {
+        console.log(chalk.dim("  Running Claude Code..."));
+        // Run Claude Code with the prompt
+        const { stdout, stderr } = await execAsync(`claude --print "${prompt.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`, {
+            cwd: workingDir,
+            timeout: 10 * 60 * 1000, // 10 minute timeout
+            maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+        });
+        clearInterval(heartbeatInterval);
+        const output = stdout + (stderr ? `\nStderr: ${stderr}` : "");
+        // Log the result
+        try {
+            await apiClient.sendLogs(agent.id, task.id, [{
+                    logType: "INFO",
+                    content: output.slice(0, 50000),
+                    timestamp: new Date().toISOString(),
+                }]);
+        }
+        catch {
+            // Ignore log errors
+        }
+        // Extract summary from output (last paragraph or truncated)
+        const lines = output.trim().split("\n");
+        const summary = lines.slice(-5).join(" ").slice(0, 500) || "Task completed";
+        return { success: true, summary };
+    }
+    catch (error) {
+        clearInterval(heartbeatInterval);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        // Log the error
+        try {
+            await apiClient.sendLogs(agent.id, task.id, [{
+                    logType: "ERROR",
+                    content: errorMessage,
+                    timestamp: new Date().toISOString(),
+                }]);
+        }
+        catch {
+            // Ignore log errors
+        }
+        return { success: false, error: errorMessage };
+    }
+}
 export async function runnerStartCommand(options) {
     if (!isRunnerConfigured()) {
         console.log(chalk.yellow("\n  Runner not registered. Run 'swarm runner register' first.\n"));
@@ -438,19 +525,36 @@ export async function runnerStartCommand(options) {
         console.log(chalk.red(`\n  Working directory does not exist: ${workingDir}\n`));
         process.exit(1);
     }
-    // Initialize Anthropic client (check config first, then env var)
-    const anthropicApiKey = runnerCfg.anthropicApiKey || process.env.ANTHROPIC_API_KEY;
-    if (!anthropicApiKey) {
-        console.log(chalk.red("\n  Anthropic API key is required."));
-        console.log(chalk.dim("  Set it with: swarm init"));
-        console.log(chalk.dim("  Or set ANTHROPIC_API_KEY environment variable.\n"));
-        process.exit(1);
+    // Check for Claude Code mode
+    const useClaudeCode = options.useClaudeCode ?? false;
+    let anthropic = null;
+    if (useClaudeCode) {
+        // Check if Claude Code is available
+        const isAvailable = await checkClaudeCodeAvailable();
+        if (!isAvailable) {
+            console.log(chalk.red("\n  Claude Code CLI not found."));
+            console.log(chalk.dim("  Install it from: https://claude.ai/download"));
+            console.log(chalk.dim("  Or run without --use-claude-code to use API key instead.\n"));
+            process.exit(1);
+        }
+        console.log(chalk.green("  ✓ Using Claude Code (no API key required)\n"));
     }
-    const anthropic = new Anthropic({ apiKey: anthropicApiKey });
+    else {
+        // Initialize Anthropic client (check config first, then env var)
+        const anthropicApiKey = runnerCfg.anthropicApiKey || process.env.ANTHROPIC_API_KEY;
+        if (!anthropicApiKey) {
+            console.log(chalk.red("\n  Anthropic API key is required."));
+            console.log(chalk.dim("  Set it with: swarm init"));
+            console.log(chalk.dim("  Or use --use-claude-code to use Claude Code instead.\n"));
+            process.exit(1);
+        }
+        anthropic = new Anthropic({ apiKey: anthropicApiKey });
+    }
     const apiClient = new RunnerApiClient(config.apiUrl, runnerCfg.runnerToken);
     console.log(chalk.bold("\n  Local Agent Runner\n"));
     console.log(chalk.dim(`  Working directory: ${workingDir}`));
     console.log(chalk.dim(`  API URL: ${config.apiUrl}`));
+    console.log(chalk.dim(`  Mode: ${useClaudeCode ? "Claude Code" : "Anthropic API"}`));
     console.log(chalk.dim(`  Poll interval: ${runnerCfg.pollInterval}s`));
     console.log();
     let running = true;
@@ -485,8 +589,10 @@ export async function runnerStartCommand(options) {
             console.log(chalk.dim(`  Task ID: ${claimed.task.id}`));
             console.log(chalk.dim(`  Agent ID: ${claimed.agent.id}`));
             console.log();
-            // Execute the task
-            const result = await executeTask(claimed.task, claimed.agent, workingDir, apiClient, anthropic, runnerCfg.maxIterations);
+            // Execute the task (use Claude Code or Anthropic API based on mode)
+            const result = useClaudeCode
+                ? await executeTaskWithClaudeCode(claimed.task, claimed.agent, workingDir, apiClient)
+                : await executeTask(claimed.task, claimed.agent, workingDir, apiClient, anthropic, runnerCfg.maxIterations);
             // Report completion
             await apiClient.completeTask(claimed.agent.id, claimed.task.id, result.success, { summary: result.summary, error: result.error });
             if (result.success) {

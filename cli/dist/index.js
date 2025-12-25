@@ -228,9 +228,14 @@ runnerCommand
     .description("Start the local runner to process tasks")
     .option("-d, --dir <directory>", "Working directory for task execution")
     .option("--once", "Process one task and exit")
+    .option("-c, --use-claude-code", "Use Claude Code CLI instead of API key (Recommended)")
     .action(async (options) => {
     checkConfig();
-    await runnerStartCommand({ dir: options.dir, once: options.once });
+    await runnerStartCommand({
+        dir: options.dir,
+        once: options.once,
+        useClaudeCode: options.useClaudeCode,
+    });
 });
 runnerCommand
     .command("status")
