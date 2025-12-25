@@ -9,11 +9,16 @@ neonConfig.webSocketConstructor = ws;
 neonConfig.poolQueryViaFetch = true;
 
 const createPrismaClient = () => {
-  const connectionString = process.env.DATABASE_URL;
+  let connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
+
+  // Remove channel_binding parameter if present (incompatible with serverless driver)
+  connectionString = connectionString.replace(/&?channel_binding=[^&]*/gi, "");
+  // Clean up any trailing ? or &
+  connectionString = connectionString.replace(/[?&]$/, "");
 
   // Create pool for Neon serverless with timeout settings
   const pool = new Pool({
