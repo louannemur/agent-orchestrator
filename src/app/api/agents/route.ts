@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { agentService } from "@/services/agent-service";
 import { AgentStatus, spawnAgentRequestSchema } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 // ============================================================================
 // Response Helpers
 // ============================================================================
