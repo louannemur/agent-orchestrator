@@ -77,19 +77,19 @@ export async function POST(request: NextRequest) {
       return errorResponse("Agent does not belong to this runner session", 403);
     }
 
-    // Insert logs in batch
-    const logRecords = logs.map((log) => ({
-      agentId,
-      taskId,
-      logType: log.logType,
-      content: log.content.slice(0, 50000), // Truncate very long content
-      metadata: log.metadata ? JSON.parse(JSON.stringify(log.metadata)) : null,
-      createdAt: log.timestamp ? new Date(log.timestamp) : new Date(),
-    }));
-
-    await db.agentLog.createMany({
-      data: logRecords,
-    });
+    // Insert logs individually (createMany requires transactions, not supported in HTTP mode)
+    for (const log of logs) {
+      await db.agentLog.create({
+        data: {
+          agentId,
+          taskId,
+          logType: log.logType,
+          content: log.content.slice(0, 50000), // Truncate very long content
+          metadata: log.metadata ? JSON.parse(JSON.stringify(log.metadata)) : null,
+          createdAt: log.timestamp ? new Date(log.timestamp) : new Date(),
+        },
+      });
+    }
 
     // Update agent last activity
     await db.agent.update({
