@@ -45,9 +45,10 @@ export function SpawnAgentDialog({
       const response = await fetch("/api/tasks?status=QUEUED&limit=50");
       if (response.ok) {
         const { data } = await response.json();
-        setTasks(data || []);
+        const taskList = data?.tasks || [];
+        setTasks(taskList);
         // Auto-select first task if available
-        const firstTask = data?.[0];
+        const firstTask = taskList[0];
         if (firstTask && !selectedTaskId) {
           setSelectedTaskId(firstTask.id);
         }
