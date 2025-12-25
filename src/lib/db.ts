@@ -2,9 +2,11 @@ import { neonConfig, Pool } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 
-// Use fetch mode for serverless (no WebSocket needed)
-// Note: This is deprecated but still required for proper initialization
+// Configure Neon for serverless (HTTP fetch mode, no WebSocket)
 neonConfig.fetchConnectionCache = true;
+neonConfig.useSecureWebSocket = false;
+neonConfig.pipelineTLS = false;
+neonConfig.pipelineConnect = false;
 
 const createPrismaClient = () => {
   let connectionString = process.env.DATABASE_URL;
