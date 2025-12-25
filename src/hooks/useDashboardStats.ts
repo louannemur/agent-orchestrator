@@ -146,7 +146,8 @@ export function useDashboardStats(): UseDashboardStatsResult {
       // Get recent exceptions
       if (exceptionsRes.ok) {
         const exceptionsData = await exceptionsRes.json();
-        for (const exc of exceptionsData.data || []) {
+        const exceptions = exceptionsData.data?.exceptions || exceptionsData.data || [];
+        for (const exc of exceptions) {
           activities.push({
             id: `exc-${exc.id}`,
             type: "exception_created",
@@ -161,7 +162,8 @@ export function useDashboardStats(): UseDashboardStatsResult {
       // Get recent task completions/failures
       if (tasksRes.ok) {
         const tasksData = await tasksRes.json();
-        for (const task of tasksData.data || []) {
+        const tasks = tasksData.data?.tasks || tasksData.data || [];
+        for (const task of tasks) {
           if (task.status === "COMPLETED") {
             activities.push({
               id: `task-complete-${task.id}`,
