@@ -7,6 +7,7 @@ import {
   ChevronRight,
   LayoutDashboard,
   ListTodo,
+  Plug,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,6 +51,11 @@ const navItems: NavItem[] = [
     href: "/exceptions",
     label: "Exceptions",
     icon: <AlertTriangle className="h-5 w-5" />,
+  },
+  {
+    href: "/connect",
+    label: "Connect Runner",
+    icon: <Plug className="h-5 w-5" />,
   },
 ];
 

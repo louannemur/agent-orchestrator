@@ -3,113 +3,312 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { table } from "table";
+import Anthropic from "@anthropic-ai/sdk";
+import { exec } from "child_process";
+import { promises as fs } from "fs";
+import * as path from "path";
+import * as readline from "readline";
+import { promisify } from "util";
+import Conf from "conf";
 
-import { displayConfig, hasValidConfig, loadConfig } from "./config.js";
-import { getApiClient, handleApiError } from "./api-client.js";
-import {
-  initCommand,
-  statusCommand,
-  spawnCommand,
-  stopCommand,
-  logsCommand,
-  taskAddCommand,
-  taskListCommand,
-  taskViewCommand,
-  taskRunCommand,
-  taskCancelCommand,
-  queueCommand,
-  runnerRegisterCommand,
-  runnerStartCommand,
-  runnerStatusCommand,
-} from "./commands/index.js";
+const execAsync = promisify(exec);
 
 // ============================================================================
-// Program Setup
+// Configuration Store
+// ============================================================================
+
+interface Config {
+  apiUrl: string;
+  runnerToken: string;
+  runnerName: string;
+  workingDir: string;
+}
+
+const config = new Conf<Config>({
+  projectName: "swarm-agent",
+  defaults: {
+    apiUrl: "",
+    runnerToken: "",
+    runnerName: "",
+    workingDir: "",
+  },
+});
+
+function isConfigured(): boolean {
+  return !!(config.get("apiUrl") && config.get("runnerToken"));
+}
+
+// ============================================================================
+// API Client
+// ============================================================================
+
+async function apiRequest<T>(
+  method: string,
+  endpoint: string,
+  body?: unknown
+): Promise<T> {
+  const apiUrl = config.get("apiUrl");
+  const response = await fetch(`${apiUrl}${endpoint}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const json = (await response.json()) as { data?: T; error?: string; message?: string };
+
+  if (!response.ok) {
+    throw new Error(json.message || json.error || "Request failed");
+  }
+
+  return json.data as T;
+}
+
+// ============================================================================
+// Claude Code Check
+// ============================================================================
+
+async function isClaudeCodeAvailable(): Promise<boolean> {
+  try {
+    await execAsync("claude --version", { timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// Program
 // ============================================================================
 
 const program = new Command();
 
 program
-  .name("swarm")
-  .description("CLI for Agent Orchestrator - manage AI agents and tasks")
+  .name("swarm-agent")
+  .description("Connect your machine to Swarm - AI agent orchestration")
   .version("1.0.0");
 
 // ============================================================================
-// Helpers
-// ============================================================================
-
-function checkConfig(): void {
-  if (!hasValidConfig()) {
-    console.log(
-      chalk.yellow("\nNo configuration found. Run `swarm init` to set up.\n")
-    );
-    console.log(chalk.dim("  Using default API URL: http://localhost:3000\n"));
-  }
-}
-
-function formatStatus(status: string): string {
-  const statusColors: Record<string, (s: string) => string> = {
-    IDLE: chalk.gray,
-    WORKING: chalk.blue,
-    PAUSED: chalk.yellow,
-    COMPLETED: chalk.green,
-    FAILED: chalk.red,
-    QUEUED: chalk.yellow,
-    IN_PROGRESS: chalk.blue,
-    VERIFYING: chalk.magenta,
-    CANCELLED: chalk.gray,
-  };
-
-  const colorFn = statusColors[status] || chalk.white;
-  return colorFn(status);
-}
-
-function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength - 3) + "...";
-}
-
-// ============================================================================
-// Init Command
+// Connect Command
 // ============================================================================
 
 program
-  .command("init")
-  .description("Initialize swarm configuration")
-  .option("-g, --global", "Create global configuration in home directory")
-  .action(async (options) => {
-    await initCommand({ global: options.global });
+  .command("connect <token>")
+  .description("Connect this machine to your Swarm dashboard")
+  .option("-d, --dir <directory>", "Working directory for tasks")
+  .action(async (token: string, options: { dir?: string }) => {
+    console.log(chalk.bold("\n  Swarm Agent Setup\n"));
+
+    const spinner = ora("Validating connection token...").start();
+
+    try {
+      // Token format: base64(apiUrl:setupToken)
+      const decoded = Buffer.from(token, "base64").toString("utf-8");
+      const [apiUrl, setupToken] = decoded.split(":");
+
+      if (!apiUrl || !setupToken) {
+        spinner.fail("Invalid token format");
+        console.log(chalk.dim("\n  Get a valid token from your Swarm dashboard.\n"));
+        process.exit(1);
+      }
+
+      // Validate token with server
+      const response = await fetch(`${apiUrl}/api/connect`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ setupToken }),
+      });
+
+      const json = (await response.json()) as {
+        data?: { runnerToken: string; runnerName: string };
+        error?: string;
+      };
+
+      if (!response.ok || !json.data) {
+        spinner.fail("Invalid or expired token");
+        console.log(chalk.dim("\n  Get a new token from your Swarm dashboard.\n"));
+        process.exit(1);
+      }
+
+      spinner.succeed("Token validated");
+
+      // Determine working directory
+      let workingDir = options.dir;
+      if (!workingDir) {
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        workingDir = await new Promise<string>((resolve) => {
+          rl.question(
+            chalk.dim(`  Working directory [${process.cwd()}]: `),
+            (answer) => {
+              rl.close();
+              resolve(answer.trim() || process.cwd());
+            }
+          );
+        });
+      }
+
+      // Verify directory exists
+      try {
+        await fs.access(workingDir);
+      } catch {
+        console.log(chalk.red(`\n  Directory does not exist: ${workingDir}\n`));
+        process.exit(1);
+      }
+
+      // Save configuration
+      config.set("apiUrl", apiUrl);
+      config.set("runnerToken", json.data.runnerToken);
+      config.set("runnerName", json.data.runnerName);
+      config.set("workingDir", workingDir);
+
+      // Check for Claude Code
+      const hasClaudeCode = await isClaudeCodeAvailable();
+
+      console.log(chalk.green("\n  Connected successfully!\n"));
+      console.log(chalk.dim(`  Runner: ${json.data.runnerName}`));
+      console.log(chalk.dim(`  Working directory: ${workingDir}`));
+      console.log(chalk.dim(`  Claude Code: ${hasClaudeCode ? "available" : "not found"}`));
+      console.log();
+      console.log(chalk.bold("  Start the agent with:"));
+      if (hasClaudeCode) {
+        console.log(chalk.cyan("    npx swarm-agent start"));
+      } else {
+        console.log(chalk.cyan("    npx swarm-agent start --api-key <your-anthropic-key>"));
+      }
+      console.log();
+    } catch (error) {
+      spinner.fail("Connection failed");
+      if (error instanceof Error) {
+        console.log(chalk.red(`\n  ${error.message}\n`));
+      }
+      process.exit(1);
+    }
   });
 
 // ============================================================================
-// Config Command
+// Start Command
 // ============================================================================
 
 program
-  .command("config")
-  .description("Display or modify configuration")
-  .option("--anthropic-key <key>", "Set Anthropic API key")
-  .option("--api-url <url>", "Set API URL")
-  .action(async (options) => {
-    const { setRunnerConfig, getRunnerConfig } = await import("./config.js");
-
-    if (options.anthropicKey) {
-      setRunnerConfig({ anthropicApiKey: options.anthropicKey });
-      console.log(chalk.green("\n  ✓ Anthropic API key updated.\n"));
-      return;
+  .command("start")
+  .description("Start the agent to process tasks")
+  .option("-d, --dir <directory>", "Working directory (overrides saved config)")
+  .option("-k, --api-key <key>", "Anthropic API key (if not using Claude Code)")
+  .option("--once", "Process one task and exit")
+  .action(async (options: { dir?: string; apiKey?: string; once?: boolean }) => {
+    if (!isConfigured()) {
+      console.log(chalk.yellow("\n  Not connected. Run 'npx swarm-agent connect <token>' first."));
+      console.log(chalk.dim("  Get your token from the Swarm dashboard.\n"));
+      process.exit(1);
     }
 
-    if (options.apiUrl) {
-      const fs = await import("fs");
-      const currentConfig = loadConfig();
-      currentConfig.apiUrl = options.apiUrl;
-      fs.writeFileSync(".swarmrc.json", JSON.stringify(currentConfig, null, 2));
-      console.log(chalk.green("\n  ✓ API URL updated.\n"));
-      return;
+    const workingDir = options.dir || config.get("workingDir") || process.cwd();
+    const runnerToken = config.get("runnerToken");
+    const runnerName = config.get("runnerName");
+
+    // Check for Claude Code or API key
+    const hasClaudeCode = await isClaudeCodeAvailable();
+    const apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY;
+
+    if (!hasClaudeCode && !apiKey) {
+      console.log(chalk.yellow("\n  Claude Code not found and no API key provided."));
+      console.log(chalk.dim("  Either install Claude Code or provide an API key:"));
+      console.log(chalk.cyan("    npx swarm-agent start --api-key <your-anthropic-key>"));
+      console.log(chalk.dim("\n  Or set ANTHROPIC_API_KEY environment variable.\n"));
+      process.exit(1);
     }
 
-    displayConfig();
+    console.log(chalk.bold("\n  Swarm Agent\n"));
+    console.log(chalk.dim(`  Runner: ${runnerName}`));
+    console.log(chalk.dim(`  Directory: ${workingDir}`));
+    console.log(chalk.dim(`  Mode: ${hasClaudeCode ? "Claude Code" : "Anthropic API"}`));
+    console.log();
+
+    let running = true;
+    process.on("SIGINT", () => {
+      console.log(chalk.yellow("\n  Shutting down..."));
+      running = false;
+    });
+
+    // Initialize Anthropic if not using Claude Code
+    let anthropic: Anthropic | null = null;
+    if (!hasClaudeCode && apiKey) {
+      anthropic = new Anthropic({ apiKey });
+    }
+
+    while (running) {
+      const spinner = ora("Checking for tasks...").start();
+
+      try {
+        // Check for tasks
+        const status = await apiRequest<{ availableTasks: { count: number } }>(
+          "GET",
+          `/api/runner/status?runnerToken=${encodeURIComponent(runnerToken)}`
+        );
+
+        if (status.availableTasks.count === 0) {
+          spinner.info("No tasks available");
+          if (options.once) break;
+          await new Promise((r) => setTimeout(r, 5000));
+          continue;
+        }
+
+        // Claim a task
+        spinner.text = "Claiming task...";
+        const claimed = await apiRequest<{
+          task: { id: string; title: string; description: string; filesHint?: string[] } | null;
+          agent: { id: string; branchName: string | null } | null;
+        }>("POST", "/api/runner/claim", { runnerToken, workingDir });
+
+        if (!claimed.task) {
+          spinner.info("No tasks to claim");
+          if (options.once) break;
+          await new Promise((r) => setTimeout(r, 5000));
+          continue;
+        }
+
+        spinner.succeed(`Task: ${claimed.task.title}`);
+
+        // Execute task
+        let result: { success: boolean; summary?: string; error?: string };
+
+        if (hasClaudeCode) {
+          result = await executeWithClaudeCode(claimed.task, workingDir);
+        } else {
+          result = await executeWithApi(claimed.task, workingDir, anthropic!);
+        }
+
+        // Report completion
+        await apiRequest("POST", "/api/runner/complete", {
+          runnerToken,
+          agentId: claimed.agent!.id,
+          taskId: claimed.task.id,
+          success: result.success,
+          summary: result.summary,
+          error: result.error,
+        });
+
+        if (result.success) {
+          console.log(chalk.green(`  Completed: ${result.summary?.slice(0, 100) || "Done"}\n`));
+        } else {
+          console.log(chalk.red(`  Failed: ${result.error?.slice(0, 100) || "Unknown error"}\n`));
+        }
+
+        if (options.once) break;
+      } catch (error) {
+        spinner.fail("Error");
+        if (error instanceof Error) {
+          console.log(chalk.dim(`  ${error.message}`));
+        }
+        if (options.once) break;
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+    }
+
+    console.log(chalk.dim("\n  Agent stopped.\n"));
   });
 
 // ============================================================================
@@ -118,264 +317,241 @@ program
 
 program
   .command("status")
-  .description("Show overall system status with active agents table")
+  .description("Show connection status")
   .action(async () => {
-    checkConfig();
-    await statusCommand();
-  });
+    console.log(chalk.bold("\n  Swarm Agent Status\n"));
 
-// ============================================================================
-// Spawn Command
-// ============================================================================
-
-program
-  .command("spawn")
-  .description("Spawn a new agent for a task")
-  .argument("[taskId]", "Task ID to assign to the agent")
-  .option("-d, --dir <directory>", "Working directory for the agent")
-  .option("-c, --count <number>", "Number of agents to spawn for queue", "1")
-  .action(async (taskId, options) => {
-    checkConfig();
-    await spawnCommand(taskId, {
-      dir: options.dir,
-      count: parseInt(options.count, 10),
-    });
-  });
-
-// ============================================================================
-// Stop Command
-// ============================================================================
-
-program
-  .command("stop")
-  .description("Stop an agent")
-  .argument("[agentId]", "Agent ID to stop")
-  .option("-a, --all", "Stop all running agents")
-  .option("-f, --force", "Skip confirmation prompt")
-  .action(async (agentId, options) => {
-    checkConfig();
-    await stopCommand(agentId, {
-      all: options.all,
-      force: options.force,
-    });
-  });
-
-// ============================================================================
-// Logs Command
-// ============================================================================
-
-program
-  .command("logs")
-  .description("View agent logs")
-  .argument("[agentId]", "Agent ID to view logs for")
-  .option("-n, --lines <number>", "Number of log lines to show", "50")
-  .option("-f, --follow", "Follow log output (poll every 2s)")
-  .option("-t, --type <type>", "Filter by log type (THINKING, TOOL_CALL, ERROR, etc.)")
-  .action(async (agentId, options) => {
-    checkConfig();
-    await logsCommand(agentId, {
-      lines: options.lines,
-      follow: options.follow,
-      type: options.type,
-    });
-  });
-
-// ============================================================================
-// Task Commands
-// ============================================================================
-
-const taskCommand = program
-  .command("task")
-  .description("Task management commands");
-
-taskCommand
-  .command("add")
-  .description("Create a new task")
-  .argument("[title]", "Task title")
-  .option("-d, --description <description>", "Task description")
-  .option("-p, --priority <priority>", "Priority (0-3, where 0 is highest)", "2")
-  .option("-r, --risk <level>", "Risk level (LOW, MEDIUM, HIGH, CRITICAL)", "MEDIUM")
-  .option("--files <files>", "Comma-separated list of relevant files")
-  .action(async (title, options) => {
-    checkConfig();
-    await taskAddCommand(title, {
-      description: options.description,
-      priority: options.priority,
-      risk: options.risk,
-      files: options.files,
-    });
-  });
-
-taskCommand
-  .command("list")
-  .description("List all tasks")
-  .option("-s, --status <status>", "Filter by status (QUEUED, IN_PROGRESS, COMPLETED, FAILED)")
-  .option("-l, --limit <number>", "Maximum number of tasks to show", "50")
-  .action(async (options) => {
-    checkConfig();
-    await taskListCommand({
-      status: options.status,
-      limit: options.limit,
-    });
-  });
-
-taskCommand
-  .command("view")
-  .description("Show task details")
-  .argument("<taskId>", "Task ID")
-  .action(async (taskId) => {
-    checkConfig();
-    await taskViewCommand(taskId);
-  });
-
-taskCommand
-  .command("run")
-  .description("Run a queued task")
-  .argument("<taskId>", "Task ID to run")
-  .option("-d, --dir <directory>", "Working directory")
-  .action(async (taskId, options) => {
-    checkConfig();
-    await taskRunCommand(taskId, { dir: options.dir });
-  });
-
-taskCommand
-  .command("cancel")
-  .description("Cancel a task")
-  .argument("<taskId>", "Task ID to cancel")
-  .option("-f, --force", "Skip confirmation prompt")
-  .action(async (taskId, options) => {
-    checkConfig();
-    await taskCancelCommand(taskId, { force: options.force });
-  });
-
-// ============================================================================
-// Queue Command
-// ============================================================================
-
-program
-  .command("queue")
-  .description("Show task queue status (shorthand for task list --status QUEUED)")
-  .action(async () => {
-    checkConfig();
-    await queueCommand();
-  });
-
-// ============================================================================
-// Runner Commands (Local Agent Execution)
-// ============================================================================
-
-const runnerCommand = program
-  .command("runner")
-  .description("Local agent runner commands - execute tasks on your machine");
-
-runnerCommand
-  .command("register")
-  .description("Register this machine as a local runner with the cloud")
-  .option("-n, --name <name>", "Name for this runner")
-  .action(async (options) => {
-    checkConfig();
-    await runnerRegisterCommand({ name: options.name });
-  });
-
-runnerCommand
-  .command("start")
-  .description("Start the local runner to process tasks")
-  .option("-d, --dir <directory>", "Working directory for task execution")
-  .option("--once", "Process one task and exit")
-  .option("-c, --use-claude-code", "Use Claude Code CLI instead of API key (Recommended)")
-  .action(async (options) => {
-    checkConfig();
-    await runnerStartCommand({
-      dir: options.dir,
-      once: options.once,
-      useClaudeCode: options.useClaudeCode,
-    });
-  });
-
-runnerCommand
-  .command("status")
-  .description("Show local runner status")
-  .action(async () => {
-    checkConfig();
-    await runnerStatusCommand();
-  });
-
-// ============================================================================
-// Agents Command
-// ============================================================================
-
-program
-  .command("agents")
-  .description("List all agents")
-  .option("-s, --status <status>", "Filter by status (IDLE, WORKING, PAUSED, FAILED)")
-  .action(async (options) => {
-    checkConfig();
-    const spinner = ora("Fetching agents...").start();
-
-    try {
-      const api = getApiClient();
-      let agents = await api.getAgents();
-      spinner.stop();
-
-      if (options.status) {
-        agents = agents.filter(
-          (a) => a.status.toUpperCase() === options.status.toUpperCase()
-        );
-      }
-
-      if (agents.length === 0) {
-        console.log(chalk.yellow("\n  No agents found.\n"));
-        return;
-      }
-
-      const tableConfig = {
-        border: {
-          topBody: chalk.dim("─"),
-          topJoin: chalk.dim("┬"),
-          topLeft: chalk.dim("┌"),
-          topRight: chalk.dim("┐"),
-          bottomBody: chalk.dim("─"),
-          bottomJoin: chalk.dim("┴"),
-          bottomLeft: chalk.dim("└"),
-          bottomRight: chalk.dim("┘"),
-          bodyLeft: chalk.dim("│"),
-          bodyRight: chalk.dim("│"),
-          bodyJoin: chalk.dim("│"),
-          joinBody: chalk.dim("─"),
-          joinLeft: chalk.dim("├"),
-          joinRight: chalk.dim("┤"),
-          joinJoin: chalk.dim("┼"),
-        },
-      };
-
-      const tableData = [
-        [
-          chalk.cyan("Name"),
-          chalk.cyan("Status"),
-          chalk.cyan("Current Task"),
-          chalk.cyan("Tokens"),
-          chalk.cyan("Tasks"),
-        ],
-        ...agents.map((a) => [
-          a.name,
-          formatStatus(a.status),
-          a.currentTask ? truncate(a.currentTask.title, 30) : chalk.dim("-"),
-          a.totalTokensUsed.toLocaleString(),
-          `${chalk.green(a.tasksCompleted)}/${chalk.red(a.tasksFailed)}`,
-        ]),
-      ];
-
-      console.log();
-      console.log(table(tableData, tableConfig));
-      console.log(chalk.dim(`  ${agents.length} agent(s)\n`));
-    } catch (error) {
-      spinner.fail("Failed to fetch agents");
-      handleApiError(error);
+    if (!isConfigured()) {
+      console.log(chalk.yellow("  Not connected."));
+      console.log(chalk.dim("  Run 'npx swarm-agent connect <token>' to connect.\n"));
+      return;
     }
+
+    const apiUrl = config.get("apiUrl");
+    const runnerName = config.get("runnerName");
+    const workingDir = config.get("workingDir");
+    const hasClaudeCode = await isClaudeCodeAvailable();
+
+    console.log(`  Connected: ${chalk.green("Yes")}`);
+    console.log(`  Runner: ${chalk.cyan(runnerName)}`);
+    console.log(`  Server: ${chalk.dim(apiUrl)}`);
+    console.log(`  Directory: ${chalk.dim(workingDir)}`);
+    console.log(`  Claude Code: ${hasClaudeCode ? chalk.green("available") : chalk.yellow("not found")}`);
+
+    // Check server status
+    const spinner = ora("Checking server...").start();
+    try {
+      const runnerToken = config.get("runnerToken");
+      const status = await apiRequest<{ availableTasks: { count: number } }>(
+        "GET",
+        `/api/runner/status?runnerToken=${encodeURIComponent(runnerToken)}`
+      );
+      spinner.stop();
+      console.log(`  Tasks available: ${chalk.cyan(status.availableTasks.count)}`);
+    } catch {
+      spinner.stop();
+      console.log(`  Server: ${chalk.red("unreachable")}`);
+    }
+    console.log();
   });
 
 // ============================================================================
-// Parse and Run
+// Disconnect Command
+// ============================================================================
+
+program
+  .command("disconnect")
+  .description("Disconnect this machine")
+  .action(() => {
+    config.clear();
+    console.log(chalk.green("\n  Disconnected successfully.\n"));
+  });
+
+// ============================================================================
+// Task Execution
+// ============================================================================
+
+interface TaskInfo {
+  id: string;
+  title: string;
+  description: string;
+  filesHint?: string[];
+}
+
+async function executeWithClaudeCode(
+  task: TaskInfo,
+  workingDir: string
+): Promise<{ success: boolean; summary?: string; error?: string }> {
+  const prompt = `You are working on a task. Here are the details:
+
+**Task:** ${task.title}
+
+**Description:**
+${task.description}
+
+**Working Directory:** ${workingDir}
+${task.filesHint?.length ? `\n**Relevant files:**\n${task.filesHint.map((f) => `- ${f}`).join("\n")}` : ""}
+
+Please complete this task. When done, summarize what you accomplished.`;
+
+  console.log(chalk.dim("  Running with Claude Code..."));
+
+  try {
+    const { stdout } = await execAsync(
+      `claude -p "${prompt.replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`,
+      {
+        cwd: workingDir,
+        timeout: 10 * 60 * 1000,
+        maxBuffer: 10 * 1024 * 1024,
+      }
+    );
+
+    const lines = stdout.trim().split("\n");
+    const summary = lines.slice(-3).join(" ").slice(0, 500) || "Completed";
+    return { success: true, summary };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+async function executeWithApi(
+  task: TaskInfo,
+  workingDir: string,
+  anthropic: Anthropic
+): Promise<{ success: boolean; summary?: string; error?: string }> {
+  console.log(chalk.dim("  Running with Anthropic API..."));
+
+  const tools: Anthropic.Tool[] = [
+    {
+      name: "run_command",
+      description: "Run a shell command",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          command: { type: "string", description: "Command to run" },
+        },
+        required: ["command"],
+      },
+    },
+    {
+      name: "read_file",
+      description: "Read a file",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          path: { type: "string", description: "File path" },
+        },
+        required: ["path"],
+      },
+    },
+    {
+      name: "write_file",
+      description: "Write to a file",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          path: { type: "string", description: "File path" },
+          content: { type: "string", description: "Content" },
+        },
+        required: ["path", "content"],
+      },
+    },
+    {
+      name: "task_complete",
+      description: "Mark task as complete",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          summary: { type: "string", description: "Summary of work done" },
+        },
+        required: ["summary"],
+      },
+    },
+  ];
+
+  const systemPrompt = `You are an AI agent. Complete this task:
+Title: ${task.title}
+Description: ${task.description}
+Working directory: ${workingDir}
+
+Use the tools to complete the task, then call task_complete.`;
+
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: "Begin the task." },
+  ];
+
+  try {
+    for (let i = 0; i < 20; i++) {
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages,
+        tools,
+      });
+
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+      for (const block of response.content) {
+        if (block.type === "tool_use") {
+          const input = block.input as Record<string, string>;
+
+          if (block.name === "task_complete") {
+            return { success: true, summary: input.summary };
+          }
+
+          let result: string;
+          try {
+            if (block.name === "run_command") {
+              const { stdout, stderr } = await execAsync(input.command, {
+                cwd: workingDir,
+                timeout: 30000,
+              });
+              result = stdout + (stderr ? `\nStderr: ${stderr}` : "");
+            } else if (block.name === "read_file") {
+              result = await fs.readFile(path.join(workingDir, input.path), "utf-8");
+            } else if (block.name === "write_file") {
+              await fs.writeFile(path.join(workingDir, input.path), input.content);
+              result = "File written successfully";
+            } else {
+              result = "Unknown tool";
+            }
+          } catch (e) {
+            result = `Error: ${e instanceof Error ? e.message : String(e)}`;
+          }
+
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: block.id,
+            content: result.slice(0, 10000),
+          });
+        }
+      }
+
+      messages.push({ role: "assistant", content: response.content });
+      if (toolResults.length > 0) {
+        messages.push({ role: "user", content: toolResults });
+      }
+
+      if (response.stop_reason === "end_turn" && toolResults.length === 0) {
+        return { success: true, summary: "Task completed" };
+      }
+    }
+
+    return { success: false, error: "Max iterations reached" };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+// ============================================================================
+// Run
 // ============================================================================
 
 program.parse();
