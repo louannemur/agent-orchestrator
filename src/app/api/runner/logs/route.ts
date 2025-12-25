@@ -29,7 +29,7 @@ const logEntrySchema = z.object({
   logType: z.nativeEnum(LogType),
   content: z.string(),
   metadata: z.record(z.unknown()).optional(),
-  timestamp: z.string().datetime().optional(),
+  timestamp: z.string().optional(),
 });
 
 const logsSchema = z.object({
