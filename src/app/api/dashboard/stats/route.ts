@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { handleError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import {
   AgentStatus,
   ExceptionSeverity,
@@ -52,11 +54,16 @@ interface DashboardStatsResponse {
 // GET /api/dashboard/stats
 // ============================================================================
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const requestId = request.headers.get("x-request-id") || undefined;
+  const log = logger.child({ requestId, path: "/api/dashboard/stats" });
+
   try {
     // Get start of today in UTC
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);
+
+    log.debug("Fetching dashboard stats");
 
     // Run all queries in parallel for efficiency
     const [
@@ -204,6 +211,8 @@ export async function GET() {
       },
     };
 
+    log.debug("Dashboard stats fetched successfully", { totalAgents, totalTasks });
+
     return NextResponse.json(
       { data: stats },
       {
@@ -214,10 +223,6 @@ export async function GET() {
       }
     );
   } catch (error) {
-    console.error("[GET /api/dashboard/stats] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard stats", message: "Internal server error" },
-      { status: 500 }
-    );
+    return handleError(error, "GET /api/dashboard/stats", requestId);
   }
 }
