@@ -1,6 +1,9 @@
-import { neon } from "@neondatabase/serverless";
-import { PrismaNeonHTTP } from "@prisma/adapter-neon";
+import { neonConfig, Pool } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
+
+// Use fetch mode for serverless (no WebSocket needed)
+neonConfig.fetchConnectionCache = true;
 
 const createPrismaClient = () => {
   let connectionString = process.env.DATABASE_URL;
@@ -14,9 +17,10 @@ const createPrismaClient = () => {
   // Clean up any trailing ? or &
   connectionString = connectionString.replace(/[?&]$/, "");
 
-  // Use HTTP-based Neon client (better for Vercel serverless)
-  const sql = neon(connectionString);
-  const adapter = new PrismaNeonHTTP(sql);
+  // Create pool for Neon serverless
+  const pool = new Pool({ connectionString });
+  // @ts-expect-error - Pool type mismatch between neon and prisma adapter versions
+  const adapter = new PrismaNeon(pool);
 
   return new PrismaClient({
     adapter,
