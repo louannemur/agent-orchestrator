@@ -15,3 +15,10 @@ export {
   type TaskCancelOptions,
 } from "./task.js";
 export { queueCommand } from "./queue.js";
+export {
+  runnerRegisterCommand,
+  runnerStartCommand,
+  runnerStatusCommand,
+  type RunnerRegisterOptions,
+  type RunnerStartOptions,
+} from "./runner.js";

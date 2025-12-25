@@ -19,6 +19,9 @@ import {
   taskRunCommand,
   taskCancelCommand,
   queueCommand,
+  runnerRegisterCommand,
+  runnerStartCommand,
+  runnerStatusCommand,
 } from "./commands/index.js";
 
 // ============================================================================
@@ -236,6 +239,41 @@ program
   .action(async () => {
     checkConfig();
     await queueCommand();
+  });
+
+// ============================================================================
+// Runner Commands (Local Agent Execution)
+// ============================================================================
+
+const runnerCommand = program
+  .command("runner")
+  .description("Local agent runner commands - execute tasks on your machine");
+
+runnerCommand
+  .command("register")
+  .description("Register this machine as a local runner with the cloud")
+  .option("-n, --name <name>", "Name for this runner")
+  .action(async (options) => {
+    checkConfig();
+    await runnerRegisterCommand({ name: options.name });
+  });
+
+runnerCommand
+  .command("start")
+  .description("Start the local runner to process tasks")
+  .option("-d, --dir <directory>", "Working directory for task execution")
+  .option("--once", "Process one task and exit")
+  .action(async (options) => {
+    checkConfig();
+    await runnerStartCommand({ dir: options.dir, once: options.once });
+  });
+
+runnerCommand
+  .command("status")
+  .description("Show local runner status")
+  .action(async () => {
+    checkConfig();
+    await runnerStatusCommand();
   });
 
 // ============================================================================

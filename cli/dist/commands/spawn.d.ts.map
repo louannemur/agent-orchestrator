@@ -1,0 +1,1 @@
+{"version":3,"file":"spawn.d.ts","sourceRoot":"","sources":["../../src/commands/spawn.ts"],"names":[],"mappings":"AAoBA,MAAM,WAAW,YAAY;IAC3B,GAAG,CAAC,EAAE,MAAM,CAAC;IACb,KAAK,CAAC,EAAE,MAAM,CAAC;CAChB;AAED,wBAAsB,YAAY,CAChC,MAAM,EAAE,MAAM,GAAG,SAAS,EAC1B,OAAO,EAAE,YAAY,GACpB,OAAO,CAAC,IAAI,CAAC,CAuHf"}

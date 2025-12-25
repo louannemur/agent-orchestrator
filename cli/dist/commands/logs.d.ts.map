@@ -1,0 +1,1 @@
+{"version":3,"file":"logs.d.ts","sourceRoot":"","sources":["../../src/commands/logs.ts"],"names":[],"mappings":"AAmEA,MAAM,WAAW,WAAW;IAC1B,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,MAAM,CAAC,EAAE,OAAO,CAAC;IACjB,IAAI,CAAC,EAAE,MAAM,CAAC;CACf;AAED,wBAAsB,WAAW,CAC/B,OAAO,EAAE,MAAM,GAAG,SAAS,EAC3B,OAAO,EAAE,WAAW,GACnB,OAAO,CAAC,IAAI,CAAC,CAoIf"}
