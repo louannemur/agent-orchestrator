@@ -32,7 +32,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   const spinner = ora("Testing connection to API...").start();
 
   try {
-    const response = await fetch(`${config.apiUrl}/api/dashboard`, {
+    const response = await fetch(`${config.apiUrl}/api/health`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
