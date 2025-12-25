@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Filter, Loader2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import type {
   ExceptionData,
