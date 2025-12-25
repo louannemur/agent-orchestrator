@@ -1,29 +1,18 @@
-import { neonConfig, Pool } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaNeonHTTP } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 
-// Configure Neon for serverless (HTTP fetch mode, no WebSocket)
-neonConfig.fetchConnectionCache = true;
-neonConfig.useSecureWebSocket = false;
-neonConfig.pipelineTLS = false;
-neonConfig.pipelineConnect = false;
-
 const createPrismaClient = () => {
-  let connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  // Remove channel_binding parameter if present (incompatible with serverless driver)
-  connectionString = connectionString.replace(/&?channel_binding=[^&]*/gi, "");
-  // Clean up any trailing ? or &
-  connectionString = connectionString.replace(/[?&]$/, "");
-
-  // Create pool for Neon serverless
-  const pool = new Pool({ connectionString });
-  // @ts-expect-error - Pool type mismatch between neon and prisma adapter versions
-  const adapter = new PrismaNeon(pool);
+  // Use Neon's HTTP-based driver (better for serverless)
+  const adapter = new PrismaNeonHTTP(connectionString, {
+    arrayMode: false,
+    fullResults: true,
+  });
 
   return new PrismaClient({
     adapter,
