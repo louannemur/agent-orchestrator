@@ -102,7 +102,7 @@ export function useExceptions(options: UseExceptionsOptions = {}): UseExceptions
       }
 
       const data = await response.json();
-      setExceptions(data.exceptions || []);
+      setExceptions(data.data?.exceptions || []);
       setError(null);
       setLastUpdated(new Date());
     } catch (err) {

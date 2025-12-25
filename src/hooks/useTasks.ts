@@ -122,7 +122,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksResult {
       }
 
       const { data } = await response.json();
-      setTasks(data || []);
+      setTasks(data?.tasks || []);
       setError(null);
       setLastUpdated(new Date());
     } catch (err) {
