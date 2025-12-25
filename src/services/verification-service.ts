@@ -41,14 +41,6 @@ interface AllCheckResults {
   semantic?: SemanticCheckResult;
 }
 
-interface ParsedTypeScriptError {
-  file: string;
-  line: number;
-  column: number;
-  message: string;
-  code: string;
-}
-
 // ============================================================================
 // Helper Functions
 // ============================================================================

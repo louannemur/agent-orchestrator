@@ -326,7 +326,7 @@ export function TaskTable({
   statusFilter,
   searchQuery,
   sortBy,
-  sortOrder,
+  sortOrder: _sortOrder,
   onStatusFilterChange,
   onSearchChange,
   onSortChange,

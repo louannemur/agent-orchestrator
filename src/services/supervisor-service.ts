@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { coordinatorService } from "./coordinator-service";
-import { verificationService } from "./verification-service";
 
 // ============================================================================
 // Types
@@ -24,7 +23,7 @@ interface RetryStrategy {
 
 interface StuckAgentInfo {
   id: string;
-  name: string;
+  name: string | null;
   lastActivityAt: Date | null;
   currentTaskId: string | null;
   minutesSinceActivity: number;
@@ -148,13 +147,12 @@ class SupervisorService {
       // Create exception
       await prisma.exception.create({
         data: {
-          type: "AGENT_STUCK",
-          severity: "HIGH",
+          exceptionType: "AGENT_STUCK",
+          severity: "ERROR",
           title: `Agent stuck: ${agent.name}`,
-          message: `Agent has been inactive for ${agent.minutesSinceActivity} minutes`,
+          description: `Agent has been inactive for ${agent.minutesSinceActivity} minutes`,
           agentId: agent.id,
           taskId: agent.currentTaskId,
-          status: "OPEN",
         },
       });
 
@@ -176,7 +174,6 @@ class SupervisorService {
           where: { id: agent.currentTaskId },
           data: {
             status: "FAILED",
-            error: "Agent became unresponsive",
           },
         });
       }
@@ -208,15 +205,32 @@ class SupervisorService {
     const failedTasks = await prisma.task.findMany({
       where: {
         status: "FAILED",
-        retryCount: { lt: this.maxRetries },
+        verificationAttempts: { lt: this.maxRetries },
       },
       include: {
-        agent: true,
+        assignedAgent: true,
+        verificationResults: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     });
 
     for (const task of failedTasks) {
-      const failureType = this.classifyFailure(task.error || "");
+      // Get error from latest verification result if available
+      const latestResult = task.verificationResults[0];
+      // Derive error context from failed checks
+      const errorContext = latestResult
+        ? [
+            !latestResult.syntaxPassed && "syntax",
+            !latestResult.typesPassed && "type",
+            !latestResult.lintPassed && "lint",
+            !latestResult.testsPassed && "test",
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : "";
+      const failureType = this.classifyFailure(errorContext);
       const strategy = this.getRetryStrategy(failureType);
 
       if (!strategy.shouldRetry) {
@@ -228,12 +242,11 @@ class SupervisorService {
           // Create exception for human review
           await prisma.exception.create({
             data: {
-              type: "TASK_FAILED",
-              severity: "HIGH",
+              exceptionType: "UNKNOWN_ERROR",
+              severity: "ERROR",
               title: `Task requires review: ${task.title}`,
-              message: `Task failed with ${failureType} and requires human intervention`,
+              description: `Task failed with ${failureType} and requires human intervention`,
               taskId: task.id,
-              status: "OPEN",
             },
           });
         }
@@ -249,16 +262,15 @@ class SupervisorService {
       }
 
       console.log(
-        `[Supervisor] Retrying task ${task.id} (attempt ${task.retryCount + 1}/${strategy.maxAttempts})`
+        `[Supervisor] Retrying task ${task.id} (attempt ${task.verificationAttempts + 1}/${strategy.maxAttempts})`
       );
 
       // Reset task for retry
       await prisma.task.update({
         where: { id: task.id },
         data: {
-          status: "PENDING",
-          error: null,
-          retryCount: task.retryCount + 1,
+          status: "QUEUED",
+          verificationAttempts: task.verificationAttempts + 1,
         },
       });
     }
@@ -274,7 +286,7 @@ class SupervisorService {
   ): Promise<void> {
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { agent: true },
+      include: { assignedAgent: true },
     });
 
     if (!task) {
@@ -284,34 +296,33 @@ class SupervisorService {
 
     // Classify the primary failure
     const primaryFailure = failures[0];
-    const failureType = this.classifyVerificationFailure(primaryFailure.check);
+    const failureType = primaryFailure
+      ? this.classifyVerificationFailure(primaryFailure.check)
+      : "UNKNOWN";
     const strategy = this.getRetryStrategy(failureType);
 
     console.log(
       `[Supervisor] Verification failure for task ${taskId}: ${failureType}`
     );
 
-    if (task.retryCount >= strategy.maxAttempts || !strategy.shouldRetry) {
+    if (task.verificationAttempts >= strategy.maxAttempts || !strategy.shouldRetry) {
       // Max retries exceeded or not retryable
       await prisma.task.update({
         where: { id: taskId },
         data: {
           status: "FAILED",
-          error: `Verification failed: ${failures.map((f) => f.error).join("; ")}`,
         },
       });
 
       // Create exception
       await prisma.exception.create({
         data: {
-          type: "VERIFICATION_FAILED",
-          severity: strategy.requiresHumanReview ? "CRITICAL" : "HIGH",
+          exceptionType: "VERIFICATION_FAILED",
+          severity: strategy.requiresHumanReview ? "CRITICAL" : "ERROR",
           title: `Verification failed: ${task.title}`,
-          message: `Task failed verification after ${task.retryCount} attempts. Failures: ${failures.map((f) => f.check).join(", ")}`,
+          description: `Task failed verification after ${task.verificationAttempts} attempts. Failures: ${failures.map((f) => f.check).join(", ")}`,
           taskId: task.id,
-          agentId: task.agentId,
-          status: "OPEN",
-          metadata: JSON.stringify({ failures }),
+          agentId: task.assignedAgentId,
         },
       });
     } else {
@@ -319,14 +330,13 @@ class SupervisorService {
       await prisma.task.update({
         where: { id: taskId },
         data: {
-          status: "PENDING",
-          retryCount: task.retryCount + 1,
-          error: null,
+          status: "QUEUED",
+          verificationAttempts: task.verificationAttempts + 1,
         },
       });
 
       console.log(
-        `[Supervisor] Task ${taskId} queued for retry (attempt ${task.retryCount + 1})`
+        `[Supervisor] Task ${taskId} queued for retry (attempt ${task.verificationAttempts + 1})`
       );
     }
   }
@@ -361,12 +371,11 @@ class SupervisorService {
       // Create exception for monitoring failure
       await prisma.exception.create({
         data: {
-          type: "SYSTEM_ERROR",
-          severity: "HIGH",
+          exceptionType: "UNKNOWN_ERROR",
+          severity: "ERROR",
           title: "Supervisor check failed",
-          message:
+          description:
             error instanceof Error ? error.message : "Unknown error during monitoring",
-          status: "OPEN",
         },
       });
     }

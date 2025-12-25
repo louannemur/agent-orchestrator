@@ -313,10 +313,10 @@ async function listFiles(
     const entries = await fs.readdir(safePath, { withFileTypes: true });
     const results: string[] = [];
 
-    async function processDirectory(
+    const processDirectory = async (
       dirPath: string,
       prefix: string = ""
-    ): Promise<void> {
+    ): Promise<void> => {
       const items = await fs.readdir(dirPath, { withFileTypes: true });
 
       for (const item of items) {
@@ -330,7 +330,7 @@ async function listFiles(
           await processDirectory(path.join(dirPath, item.name), newPrefix);
         }
       }
-    }
+    };
 
     if (recursive) {
       await processDirectory(safePath);

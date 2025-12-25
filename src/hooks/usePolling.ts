@@ -44,7 +44,9 @@ export function getPollingState() {
 
 export function subscribeToPollingState(listener: () => void) {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 function updateGlobalState(lastUpdated: Date | null, isPolling: boolean) {

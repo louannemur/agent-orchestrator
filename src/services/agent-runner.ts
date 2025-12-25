@@ -424,65 +424,6 @@ export class AgentRunner {
     return lines.join("\n");
   }
 
-  private buildVerificationFeedback(result: {
-    syntaxPassed: boolean | null;
-    typesPassed: boolean | null;
-    lintPassed: boolean | null;
-    testsPassed: boolean | null;
-    testsTotal: number | null;
-    testsFailed: number | null;
-    failures: unknown;
-    semanticScore: unknown;
-    semanticExplanation: string | null;
-    recommendations: string[];
-  }): string {
-    let feedback = `## Verification Failed
-
-Your changes did not pass verification. Please fix the issues and call task_complete again.
-
-### Check Results:
-`;
-
-    feedback += `- Syntax: ${result.syntaxPassed ? "✓ Passed" : "✗ Failed"}\n`;
-    feedback += `- Types: ${result.typesPassed ? "✓ Passed" : "✗ Failed"}\n`;
-    feedback += `- Lint: ${result.lintPassed ? "✓ Passed" : "✗ Failed"}\n`;
-    feedback += `- Tests: ${result.testsPassed ? "✓ Passed" : "✗ Failed"}`;
-    if (result.testsTotal && result.testsTotal > 0) {
-      feedback += ` (${result.testsFailed ?? 0}/${result.testsTotal} failed)`;
-    }
-    feedback += "\n";
-
-    if (result.failures && Array.isArray(result.failures) && result.failures.length > 0) {
-      feedback += "\n### Errors:\n";
-      const failures = result.failures as Array<{ type?: string; message?: string; file?: string; line?: number }>;
-      for (const failure of failures.slice(0, 15)) {
-        if (failure.file && failure.line) {
-          feedback += `- ${failure.file}:${failure.line}: ${failure.message}\n`;
-        } else if (failure.message) {
-          feedback += `- ${failure.message}\n`;
-        }
-      }
-      if (failures.length > 15) {
-        feedback += `... and ${failures.length - 15} more errors\n`;
-      }
-    }
-
-    if (result.semanticExplanation) {
-      feedback += `\n### Semantic Analysis:\n${result.semanticExplanation}\n`;
-    }
-
-    if (result.recommendations.length > 0) {
-      feedback += "\n### Recommendations:\n";
-      for (const rec of result.recommendations) {
-        feedback += `- ${rec}\n`;
-      }
-    }
-
-    feedback += "\nPlease fix these issues and try again.";
-
-    return feedback;
-  }
-
   /**
    * Handle a verification failure and determine if the agent should continue or give up.
    * Returns 'continue' to keep the agent loop going, or 'give_up' to stop.
@@ -747,7 +688,7 @@ Begin by exploring the relevant parts of the codebase to understand the context,
           taskId: this.config.taskId,
           logType: type,
           content: content.slice(0, 50000), // Truncate very long content
-          metadata: metadata ?? undefined,
+          metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : undefined,
         },
       });
     } catch (error) {

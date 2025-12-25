@@ -6,10 +6,6 @@ import ws from "ws";
 // Configure WebSocket for Neon serverless
 neonConfig.webSocketConstructor = ws;
 
-// Optimize for serverless environment
-neonConfig.poolQueryViaFetch = true;
-neonConfig.useSecureWebSocket = true;
-
 const createPrismaClient = () => {
   const connectionString = process.env.DATABASE_URL;
 
@@ -17,15 +13,9 @@ const createPrismaClient = () => {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  // Configure connection pool for serverless
-  const pool = new Pool({
-    connectionString,
-    // Serverless-optimized settings
-    max: 10, // Maximum connections in the pool
-    idleTimeoutMillis: 30000, // Close idle connections after 30s
-    connectionTimeoutMillis: 10000, // Timeout for new connections
-  });
-
+  // Create pool for Neon serverless
+  const pool = new Pool({ connectionString });
+  // @ts-expect-error - Pool type mismatch between neon and prisma adapter versions
   const adapter = new PrismaNeon(pool);
 
   return new PrismaClient({

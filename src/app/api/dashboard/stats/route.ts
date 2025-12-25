@@ -69,7 +69,6 @@ export async function GET() {
       openExceptions,
       completedToday,
       failedToday,
-      _avgCompletionTime,
     ] = await Promise.all([
       // Agent counts by status
       db.agent.groupBy({
@@ -117,18 +116,6 @@ export async function GET() {
         where: {
           status: TaskStatus.FAILED,
           updatedAt: { gte: startOfToday },
-        },
-      }),
-
-      // Average completion time (for completed tasks)
-      db.task.aggregate({
-        where: {
-          status: TaskStatus.COMPLETED,
-          completedAt: { not: null },
-          assignedAt: { not: null },
-        },
-        _avg: {
-          // We can't do date math in Prisma aggregate, so we'll handle this differently
         },
       }),
     ]);
