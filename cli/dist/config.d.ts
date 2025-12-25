@@ -5,6 +5,7 @@ export interface SwarmConfig {
 export interface RunnerConfig {
     runnerToken: string;
     runnerName: string;
+    anthropicApiKey: string;
     pollInterval: number;
     maxIterations: number;
 }

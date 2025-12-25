@@ -17,6 +17,7 @@ export interface SwarmConfig {
 export interface RunnerConfig {
   runnerToken: string;
   runnerName: string;
+  anthropicApiKey: string;
   pollInterval: number; // in seconds
   maxIterations: number;
 }
@@ -38,6 +39,7 @@ const runnerConfig = new Conf<RunnerConfig>({
   defaults: {
     runnerToken: "",
     runnerName: "",
+    anthropicApiKey: "",
     pollInterval: 5,
     maxIterations: 50,
   },
@@ -120,9 +122,10 @@ export function displayConfig(): void {
   if (isRunnerConfigured()) {
     const runner = getRunnerConfig();
     console.log(chalk.bold("  Local Runner Configuration\n"));
-    console.log(`  Runner Name: ${chalk.cyan(runner.runnerName)}`);
-    console.log(`  Token:       ${chalk.dim(runner.runnerToken.slice(0, 16) + "...")}`);
-    console.log(`  Poll:        ${chalk.cyan(runner.pollInterval + "s")}`);
+    console.log(`  Runner Name:   ${chalk.cyan(runner.runnerName)}`);
+    console.log(`  Token:         ${chalk.dim(runner.runnerToken.slice(0, 16) + "...")}`);
+    console.log(`  Anthropic Key: ${runner.anthropicApiKey ? chalk.green("configured") : chalk.yellow("not set")}`);
+    console.log(`  Poll Interval: ${chalk.cyan(runner.pollInterval + "s")}`);
     console.log();
   }
 }
@@ -173,6 +176,7 @@ export function getRunnerConfig(): RunnerConfig {
   return {
     runnerToken: runnerConfig.get("runnerToken"),
     runnerName: runnerConfig.get("runnerName"),
+    anthropicApiKey: runnerConfig.get("anthropicApiKey"),
     pollInterval: runnerConfig.get("pollInterval"),
     maxIterations: runnerConfig.get("maxIterations"),
   };
@@ -181,6 +185,7 @@ export function getRunnerConfig(): RunnerConfig {
 export function setRunnerConfig(updates: Partial<RunnerConfig>): void {
   if (updates.runnerToken !== undefined) runnerConfig.set("runnerToken", updates.runnerToken);
   if (updates.runnerName !== undefined) runnerConfig.set("runnerName", updates.runnerName);
+  if (updates.anthropicApiKey !== undefined) runnerConfig.set("anthropicApiKey", updates.anthropicApiKey);
   if (updates.pollInterval !== undefined) runnerConfig.set("pollInterval", updates.pollInterval);
   if (updates.maxIterations !== undefined) runnerConfig.set("maxIterations", updates.maxIterations);
 }

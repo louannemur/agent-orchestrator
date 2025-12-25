@@ -573,10 +573,12 @@ export async function runnerStartCommand(options: RunnerStartOptions): Promise<v
     process.exit(1);
   }
 
-  // Initialize Anthropic client
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  // Initialize Anthropic client (check config first, then env var)
+  const anthropicApiKey = runnerCfg.anthropicApiKey || process.env.ANTHROPIC_API_KEY;
   if (!anthropicApiKey) {
-    console.log(chalk.red("\n  ANTHROPIC_API_KEY environment variable is required.\n"));
+    console.log(chalk.red("\n  Anthropic API key is required."));
+    console.log(chalk.dim("  Set it with: swarm init"));
+    console.log(chalk.dim("  Or set ANTHROPIC_API_KEY environment variable.\n"));
     process.exit(1);
   }
 

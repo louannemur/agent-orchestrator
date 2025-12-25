@@ -5,7 +5,7 @@ import chalk from "chalk";
 import ora from "ora";
 import { table } from "table";
 
-import { displayConfig, hasValidConfig } from "./config.js";
+import { displayConfig, hasValidConfig, loadConfig } from "./config.js";
 import { getApiClient, handleApiError } from "./api-client.js";
 import {
   initCommand,
@@ -88,8 +88,27 @@ program
 
 program
   .command("config")
-  .description("Display current configuration")
-  .action(() => {
+  .description("Display or modify configuration")
+  .option("--anthropic-key <key>", "Set Anthropic API key")
+  .option("--api-url <url>", "Set API URL")
+  .action(async (options) => {
+    const { setRunnerConfig, getRunnerConfig } = await import("./config.js");
+
+    if (options.anthropicKey) {
+      setRunnerConfig({ anthropicApiKey: options.anthropicKey });
+      console.log(chalk.green("\n  ✓ Anthropic API key updated.\n"));
+      return;
+    }
+
+    if (options.apiUrl) {
+      const fs = await import("fs");
+      const currentConfig = loadConfig();
+      currentConfig.apiUrl = options.apiUrl;
+      fs.writeFileSync(".swarmrc.json", JSON.stringify(currentConfig, null, 2));
+      console.log(chalk.green("\n  ✓ API URL updated.\n"));
+      return;
+    }
+
     displayConfig();
   });
 
