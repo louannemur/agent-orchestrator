@@ -42,10 +42,16 @@ const REGION = process.env.VERCEL_REGION;
 
 async function checkDatabase(): Promise<CheckResult> {
   const start = Date.now();
+  const TIMEOUT_MS = 5000;
 
   try {
-    // Simple query to verify database connection
-    await db.$queryRaw`SELECT 1`;
+    // Wrap database query with a timeout to prevent hanging
+    const queryPromise = db.$queryRaw`SELECT 1`;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Database connection timeout")), TIMEOUT_MS)
+    );
+
+    await Promise.race([queryPromise, timeoutPromise]);
     const latencyMs = Date.now() - start;
 
     return {
@@ -127,8 +133,15 @@ export async function GET(request: NextRequest) {
 // ============================================================================
 
 export async function HEAD() {
+  const TIMEOUT_MS = 5000;
+
   try {
-    await db.$queryRaw`SELECT 1`;
+    const queryPromise = db.$queryRaw`SELECT 1`;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Timeout")), TIMEOUT_MS)
+    );
+
+    await Promise.race([queryPromise, timeoutPromise]);
     return new NextResponse(null, { status: 200 });
   } catch {
     return new NextResponse(null, { status: 503 });
