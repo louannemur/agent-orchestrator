@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[POST /api/runner/logs] Error:", error);
-    return errorResponse("Failed to process logs", 500);
+    const message = error instanceof Error ? error.message : "Failed to process logs";
+    return errorResponse(message, 500);
   }
 }
