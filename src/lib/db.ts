@@ -10,9 +10,12 @@ const createPrismaClient = () => {
   }
 
   // Remove channel_binding parameter if present (incompatible with serverless driver)
-  const url = new URL(connectionString);
-  url.searchParams.delete("channel_binding");
-  connectionString = url.toString();
+  // Use regex to avoid URL encoding issues with special characters in passwords
+  connectionString = connectionString
+    .replace(/(\?|&)channel_binding=[^&]*(&|$)/g, (_, prefix, suffix) =>
+      prefix === "?" && suffix === "&" ? "?" : suffix === "&" ? "" : ""
+    )
+    .replace(/\?$/, ""); // Remove trailing ? if channel_binding was the only param
 
   // Create pool for Neon serverless
   const pool = new Pool({ connectionString });
