@@ -1,6 +1,6 @@
 "use client";
 
-import { ListTodo, Menu, Settings, Sparkles } from "lucide-react";
+import { ListTodo, Menu, Settings, Zap } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ConnectionStatus } from "@/components/ui/connection-status";
@@ -24,7 +24,7 @@ interface QuickStats {
 // Constants
 // ============================================================================
 
-const POLL_INTERVAL = 10000; // 10 seconds
+const POLL_INTERVAL = 10000;
 
 // ============================================================================
 // Header Component
@@ -42,7 +42,6 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
   const mountedRef = useRef(true);
 
   const fetchStats = useCallback(async () => {
-    // Prevent concurrent fetches
     if (isFetchingRef.current) return;
 
     try {
@@ -62,7 +61,7 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
         setLastUpdated(new Date());
       }
     } catch {
-      // Silently fail - connection status will show stale
+      // Silently fail
     } finally {
       if (mountedRef.current) {
         setIsLoading(false);
@@ -72,12 +71,9 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
     }
   }, []);
 
-  // Handle visibility change
   useEffect(() => {
     const handleVisibilityChange = () => {
       isVisibleRef.current = document.visibilityState === "visible";
-
-      // If becoming visible, fetch immediately
       if (isVisibleRef.current) {
         fetchStats();
       }
@@ -89,16 +85,11 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
     };
   }, [fetchStats]);
 
-  // Setup polling
   useEffect(() => {
     mountedRef.current = true;
-
-    // Initial fetch
     fetchStats();
 
-    // Setup interval
     intervalRef.current = setInterval(() => {
-      // Only poll when tab is visible
       if (isVisibleRef.current) {
         fetchStats();
       }
@@ -114,39 +105,35 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
   }, [fetchStats]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-surface-950/80 px-6 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-800 bg-black px-6">
       {/* Left side */}
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="rounded-lg p-2 text-zinc-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-zinc-300 lg:hidden"
+            className="rounded-md p-2 text-neutral-400 transition-colors hover:bg-neutral-900 hover:text-white lg:hidden"
             aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5" />
           </button>
         )}
-        <h1 className="text-lg font-medium text-white">{title}</h1>
+        <h1 className="text-sm font-medium text-white">{title}</h1>
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
         {/* Quick Stats */}
         {!isLoading && (
-          <div className="hidden items-center gap-3 sm:flex">
-            <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-1.5 text-[13px]">
-              <Sparkles className="h-3.5 w-3.5 text-accent-400" />
-              <span className="text-zinc-500">Active</span>
-              <span className="font-medium text-white">
-                {stats.activeAgents}
-              </span>
+          <div className="hidden items-center gap-6 text-sm sm:flex">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-neutral-500" />
+              <span className="text-neutral-500">Active</span>
+              <span className="font-medium text-white">{stats.activeAgents}</span>
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-1.5 text-[13px]">
-              <ListTodo className="h-3.5 w-3.5 text-amber-400" />
-              <span className="text-zinc-500">Queued</span>
-              <span className="font-medium text-white">
-                {stats.queuedTasks}
-              </span>
+            <div className="flex items-center gap-2">
+              <ListTodo className="h-4 w-4 text-neutral-500" />
+              <span className="text-neutral-500">Queued</span>
+              <span className="font-medium text-white">{stats.queuedTasks}</span>
             </div>
           </div>
         )}
@@ -156,10 +143,10 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
 
         {/* Settings Button */}
         <button
-          className="rounded-lg p-2 text-zinc-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-zinc-300"
+          className="rounded-md p-2 text-neutral-400 transition-colors hover:bg-neutral-900 hover:text-white"
           title="Settings"
         >
-          <Settings className="h-4.5 w-4.5" />
+          <Settings className="h-4 w-4" />
         </button>
       </div>
     </header>

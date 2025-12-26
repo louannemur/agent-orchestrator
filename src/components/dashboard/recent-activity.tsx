@@ -5,9 +5,9 @@ import {
   CheckCircle2,
   Clock,
   PlayCircle,
-  Sparkles,
   StopCircle,
   XCircle,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,33 +30,27 @@ const activityConfig: Record<
   {
     icon: React.ReactNode;
     color: string;
-    bgColor: string;
   }
 > = {
   agent_started: {
-    icon: <PlayCircle className="h-3.5 w-3.5" />,
-    color: "text-accent-400",
-    bgColor: "bg-accent-500/10 border border-accent-500/20",
+    icon: <PlayCircle className="h-4 w-4" />,
+    color: "text-blue-500",
   },
   agent_stopped: {
-    icon: <StopCircle className="h-3.5 w-3.5" />,
-    color: "text-zinc-400",
-    bgColor: "bg-zinc-500/10 border border-zinc-500/20",
+    icon: <StopCircle className="h-4 w-4" />,
+    color: "text-neutral-500",
   },
   task_completed: {
-    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/10 border border-emerald-500/20",
+    icon: <CheckCircle2 className="h-4 w-4" />,
+    color: "text-emerald-500",
   },
   task_failed: {
-    icon: <XCircle className="h-3.5 w-3.5" />,
-    color: "text-red-400",
-    bgColor: "bg-red-500/10 border border-red-500/20",
+    icon: <XCircle className="h-4 w-4" />,
+    color: "text-red-500",
   },
   exception_created: {
-    icon: <AlertTriangle className="h-3.5 w-3.5" />,
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/10 border border-amber-500/20",
+    icon: <AlertTriangle className="h-4 w-4" />,
+    color: "text-amber-500",
   },
 };
 
@@ -106,16 +100,12 @@ function ActivityItem({ activity }: { activity: RecentActivity }) {
   const href = getHref();
 
   const content = (
-    <div className="group/item flex items-start gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.04]">
-      <div className={`mt-0.5 rounded-lg p-1.5 ${config.bgColor}`}>
-        <span className={config.color}>{config.icon}</span>
-      </div>
+    <div className="flex items-start gap-3 py-2.5">
+      <span className={config.color}>{config.icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] text-zinc-300 transition-colors group-hover/item:text-white">
-          {activity.description}
-        </p>
-        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-500">
-          <Clock className="h-2.5 w-2.5" />
+        <p className="truncate text-sm text-neutral-300">{activity.description}</p>
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+          <Clock className="h-3 w-3" />
           {getRelativeTime(activity.timestamp)}
         </p>
       </div>
@@ -123,7 +113,11 @@ function ActivityItem({ activity }: { activity: RecentActivity }) {
   );
 
   if (href) {
-    return <Link href={href}>{content}</Link>;
+    return (
+      <Link href={href} className="block hover:bg-neutral-900 -mx-3 px-3 rounded">
+        {content}
+      </Link>
+    );
   }
 
   return content;
@@ -136,51 +130,30 @@ function ActivityItem({ activity }: { activity: RecentActivity }) {
 export function RecentActivityList({ activities }: RecentActivityProps) {
   if (activities.length === 0) {
     return (
-      <div className="group relative overflow-hidden rounded-2xl bg-white/[0.02] p-6 transition-all duration-300 hover:bg-white/[0.04]">
-        <div className="absolute inset-0 rounded-2xl border border-white/[0.06] transition-colors duration-300 group-hover:border-white/[0.1]" />
-
-        <div className="relative">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Recent Activity
-            </h3>
-          </div>
-
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="rounded-xl bg-white/[0.04] p-3">
-              <Sparkles className="h-6 w-6 text-zinc-600" />
-            </div>
-            <p className="mt-4 text-[13px] text-zinc-500">No recent activity</p>
-            <p className="mt-1 text-[11px] text-zinc-600">
-              Activity will appear here as agents work on tasks
-            </p>
-          </div>
+      <div className="rounded-lg border border-neutral-800 bg-black p-5">
+        <h3 className="text-sm font-medium text-white">Recent Activity</h3>
+        <div className="mt-8 flex flex-col items-center justify-center text-center">
+          <Zap className="h-8 w-8 text-neutral-700" />
+          <p className="mt-3 text-sm text-neutral-500">No recent activity</p>
+          <p className="mt-1 text-xs text-neutral-600">
+            Activity will appear here as agents work
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-white/[0.02] p-6 transition-all duration-300 hover:bg-white/[0.04]">
-      <div className="absolute inset-0 rounded-2xl border border-white/[0.06] transition-colors duration-300 group-hover:border-white/[0.1]" />
+    <div className="rounded-lg border border-neutral-800 bg-black p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-white">Recent Activity</h3>
+        <span className="text-xs text-neutral-500">{activities.length} events</span>
+      </div>
 
-      <div className="relative">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-            Recent Activity
-          </h3>
-          <span className="rounded-md bg-white/[0.04] px-2 py-0.5 text-[11px] text-zinc-500">
-            {activities.length} events
-          </span>
-        </div>
-
-        <div className="-mx-3 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          <div className="space-y-0.5">
-            {activities.map((activity) => (
-              <ActivityItem key={activity.id} activity={activity} />
-            ))}
-          </div>
-        </div>
+      <div className="max-h-[400px] space-y-0 overflow-y-auto">
+        {activities.map((activity) => (
+          <ActivityItem key={activity.id} activity={activity} />
+        ))}
       </div>
     </div>
   );

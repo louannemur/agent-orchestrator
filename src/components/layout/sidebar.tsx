@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   ListTodo,
   Plug,
-  Sparkles,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -35,27 +35,27 @@ const navItems: NavItem[] = [
   {
     href: "/",
     label: "Dashboard",
-    icon: <LayoutDashboard className="h-[18px] w-[18px]" />,
+    icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
     href: "/agents",
     label: "Agents",
-    icon: <Sparkles className="h-[18px] w-[18px]" />,
+    icon: <Zap className="h-4 w-4" />,
   },
   {
     href: "/tasks",
     label: "Tasks",
-    icon: <ListTodo className="h-[18px] w-[18px]" />,
+    icon: <ListTodo className="h-4 w-4" />,
   },
   {
     href: "/exceptions",
     label: "Exceptions",
-    icon: <AlertTriangle className="h-[18px] w-[18px]" />,
+    icon: <AlertTriangle className="h-4 w-4" />,
   },
   {
     href: "/connect",
     label: "Connect",
-    icon: <Plug className="h-[18px] w-[18px]" />,
+    icon: <Plug className="h-4 w-4" />,
   },
 ];
 
@@ -68,70 +68,59 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 flex h-screen flex-col bg-surface-950 transition-all duration-300 ${
-        collapsed ? "w-[68px]" : "w-60"
+      className={`fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-neutral-800 bg-black transition-all duration-200 ${
+        collapsed ? "w-16" : "w-56"
       }`}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center px-4">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-500 to-accent-600 shadow-glow">
-            <Sparkles className="h-4 w-4 text-white" />
+      <div className="flex h-14 items-center border-b border-neutral-800 px-4">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white">
+            <Zap className="h-4 w-4 text-black" />
           </div>
           {!collapsed && (
-            <span className="text-[15px] font-semibold tracking-tight text-white">
+            <span className="text-sm font-semibold text-white">
               Orchestrator
             </span>
           )}
         </Link>
       </div>
 
-      {/* Divider */}
-      <div className="mx-3 h-px bg-white/[0.04]" />
-
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 px-2 py-3">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+      <nav className="flex-1 p-2">
+        <div className="space-y-1">
+          {navItems.map((item) => {
+            const isActive =
+              item.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(item.href);
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`group relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 ${
-                isActive
-                  ? "bg-white/[0.08] text-white"
-                  : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
-              } ${collapsed ? "justify-center" : ""}`}
-              title={collapsed ? item.label : undefined}
-            >
-              {/* Active indicator */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent-500" />
-              )}
-
-              <span
-                className={
-                  isActive ? "text-accent-400" : "text-zinc-500 group-hover:text-zinc-400"
-                }
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
+                  isActive
+                    ? "bg-neutral-800 text-white"
+                    : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                } ${collapsed ? "justify-center px-2" : ""}`}
+                title={collapsed ? item.label : undefined}
               >
                 {item.icon}
-              </span>
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
-        })}
+                {!collapsed && <span>{item.label}</span>}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
 
       {/* Collapse Toggle */}
-      <div className="p-2">
+      <div className="border-t border-neutral-800 p-2">
         <button
           onClick={onToggle}
-          className="flex w-full items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-[13px] text-zinc-500 transition-all duration-150 hover:bg-white/[0.04] hover:text-zinc-300"
-          title={collapsed ? "Expand" : "Collapse"}
+          className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-900 hover:text-white ${
+            collapsed ? "justify-center px-2" : ""
+          }`}
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />
