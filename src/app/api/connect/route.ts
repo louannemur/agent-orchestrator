@@ -49,8 +49,8 @@ export async function GET() {
                    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` :
                    "http://localhost:3000";
 
-    // Create the connection token (base64 encoded apiUrl:setupToken)
-    const connectionToken = Buffer.from(`${apiUrl}:${tokenData}`).toString("base64");
+    // Create the connection token (base64 encoded apiUrl|setupToken)
+    const connectionToken = Buffer.from(`${apiUrl}|${tokenData}`).toString("base64");
 
     return jsonResponse({
       connectionToken,

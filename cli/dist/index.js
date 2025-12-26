@@ -69,9 +69,9 @@ program
     console.log(chalk.bold("\n  Swarm Agent Setup\n"));
     const spinner = ora("Validating connection token...").start();
     try {
-        // Token format: base64(apiUrl:setupToken)
+        // Token format: base64(apiUrl|setupToken:expiresAt)
         const decoded = Buffer.from(token, "base64").toString("utf-8");
-        const [apiUrl, setupToken] = decoded.split(":");
+        const [apiUrl, setupToken] = decoded.split("|");
         if (!apiUrl || !setupToken) {
             spinner.fail("Invalid token format");
             console.log(chalk.dim("\n  Get a valid token from your Swarm dashboard.\n"));

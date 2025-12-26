@@ -101,9 +101,9 @@ program
     const spinner = ora("Validating connection token...").start();
 
     try {
-      // Token format: base64(apiUrl:setupToken)
+      // Token format: base64(apiUrl|setupToken:expiresAt)
       const decoded = Buffer.from(token, "base64").toString("utf-8");
-      const [apiUrl, setupToken] = decoded.split(":");
+      const [apiUrl, setupToken] = decoded.split("|");
 
       if (!apiUrl || !setupToken) {
         spinner.fail("Invalid token format");
