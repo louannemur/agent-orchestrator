@@ -358,6 +358,8 @@ ${task.description}
 **Working Directory:** ${workingDir}
 ${task.filesHint?.length ? `\n**Relevant files:**\n${task.filesHint.map((f) => `- ${f}`).join("\n")}` : ""}
 
+**Important:** If this task involves creating a new project or application, create it in a new subdirectory within the working directory (e.g., "${workingDir}/my-project-name"). Do NOT place project files directly in the working directory root.
+
 Please complete this task. When done, summarize what you accomplished.`;
     console.log(chalk.dim("  Running with Claude Code CLI..."));
     try {
@@ -430,6 +432,8 @@ async function executeWithApi(task, workingDir, anthropic) {
 Title: ${task.title}
 Description: ${task.description}
 Working directory: ${workingDir}
+
+Important: If this task involves creating a new project or application, create it in a new subdirectory within the working directory (e.g., "${workingDir}/my-project-name"). Do NOT place project files directly in the working directory root.
 
 Use the tools to complete the task, then call task_complete.`;
     const messages = [
