@@ -1,5 +1,5 @@
 {
-  "name": "swarm-agent",
+  "name": "swarm-agent-cli",
   "version": "1.0.0",
   "description": "Connect your machine to Swarm - AI agent orchestration platform",
   "main": "dist/index.js",

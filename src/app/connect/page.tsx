@@ -190,9 +190,9 @@ export default function ConnectPage() {
                     3
                   </span>
                   <div>
-                    <p className="font-medium">Start the agent</p>
+                    <p className="font-medium">You&apos;re connected!</p>
                     <p className="text-sm text-zinc-400">
-                      Run <code className="rounded bg-zinc-800 px-1">npx swarm-agent start</code> to begin processing tasks
+                      The runner will start processing tasks automatically
                     </p>
                   </div>
                 </li>
