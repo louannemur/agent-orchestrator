@@ -110,6 +110,50 @@ export default function ConnectPage() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Prerequisites - Before You Start */}
+            <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-6">
+              <h2 className="mb-4 text-lg font-semibold">Before You Start</h2>
+              <p className="mb-4 text-sm text-zinc-400">
+                Install Claude Code CLI to run tasks without an API key:
+              </p>
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-xs font-medium text-blue-400">
+                    1
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm text-zinc-300">Install the CLI</p>
+                    <code className="mt-1 block rounded bg-zinc-800 px-2 py-1 text-xs text-green-400">
+                      npm install -g @anthropic-ai/claude-code
+                    </code>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-xs font-medium text-blue-400">
+                    2
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm text-zinc-300">Log in with your Anthropic account</p>
+                    <code className="mt-1 block rounded bg-zinc-800 px-2 py-1 text-xs text-green-400">
+                      claude login
+                    </code>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-zinc-500">
+                Don&apos;t have Claude Code? You can also use an{" "}
+                <a
+                  href="https://console.anthropic.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline"
+                >
+                  Anthropic API key
+                </a>{" "}
+                instead.
+              </p>
+            </div>
+
             {/* Command Box */}
             <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900">
               <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
@@ -197,58 +241,6 @@ export default function ConnectPage() {
                   </div>
                 </li>
               </ol>
-            </div>
-
-            {/* Prerequisites */}
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-6">
-              <h2 className="mb-4 text-lg font-semibold">Before You Start</h2>
-              <p className="mb-4 text-sm text-zinc-400">
-                Install Claude Code CLI to run tasks without an API key:
-              </p>
-              <div className="space-y-3">
-                <div className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400">
-                    1
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm text-zinc-300">Install the CLI</p>
-                    <code className="mt-1 block rounded bg-zinc-800 px-2 py-1 text-xs text-green-400">
-                      npm install -g @anthropic-ai/claude-code
-                    </code>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400">
-                    2
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm text-zinc-300">Log in with your Anthropic account</p>
-                    <code className="mt-1 block rounded bg-zinc-800 px-2 py-1 text-xs text-green-400">
-                      claude login
-                    </code>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-400">
-                    3
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm text-zinc-300">Run the connect command above</p>
-                  </div>
-                </div>
-              </div>
-              <p className="mt-4 text-xs text-zinc-500">
-                Don&apos;t have Claude Code? You can also use an{" "}
-                <a
-                  href="https://console.anthropic.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:underline"
-                >
-                  Anthropic API key
-                </a>{" "}
-                instead.
-              </p>
             </div>
           </div>
         )}
