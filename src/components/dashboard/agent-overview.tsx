@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot } from "lucide-react";
+import { Zap } from "lucide-react";
 import Link from "next/link";
 
 import type { AgentStatus, DashboardStats } from "@/hooks/useDashboardStats";
@@ -28,8 +28,8 @@ const statusConfig: Record<
     label: "Working",
   },
   IDLE: {
-    color: "bg-zinc-500",
-    bgColor: "bg-zinc-500/20",
+    color: "bg-neutral-500",
+    bgColor: "bg-neutral-500/20",
     label: "Idle",
   },
   PAUSED: {
@@ -54,7 +54,7 @@ const statusConfig: Record<
 // ============================================================================
 
 function AgentDot({ agent }: { agent: AgentStatus }) {
-  const defaultConfig = { color: "bg-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const defaultConfig = { color: "bg-neutral-400", bgColor: "bg-neutral-500/10", label: "Unknown" };
   const config = statusConfig[agent.status] ?? defaultConfig;
 
   return (
@@ -64,23 +64,23 @@ function AgentDot({ agent }: { agent: AgentStatus }) {
       title={`${agent.name} - ${config.label}`}
     >
       <div
-        className={`h-8 w-8 rounded-lg ${config.bgColor} flex items-center justify-center transition-transform group-hover:scale-110`}
+        className={`h-8 w-8 rounded-md ${config.bgColor} flex items-center justify-center transition-all hover:scale-105`}
       >
-        <div className={`h-2.5 w-2.5 rounded-full ${config.color}`} />
+        <div className={`h-2 w-2 rounded-full ${config.color}`} />
       </div>
 
       {/* Tooltip */}
       <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100">
-        <div className="whitespace-nowrap rounded-lg bg-zinc-800 px-3 py-2 text-xs shadow-lg">
-          <p className="font-medium text-zinc-100">{agent.name}</p>
-          <p className="text-zinc-400">{config.label}</p>
+        <div className="whitespace-nowrap rounded-md bg-neutral-800 px-3 py-2 text-xs shadow-lg">
+          <p className="font-medium text-white">{agent.name}</p>
+          <p className="text-neutral-400">{config.label}</p>
           {agent.currentTaskTitle && (
-            <p className="mt-1 max-w-[200px] truncate text-zinc-500">
+            <p className="mt-1 max-w-[200px] truncate text-neutral-500">
               {agent.currentTaskTitle}
             </p>
           )}
         </div>
-        <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-zinc-800" />
+        <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-neutral-800" />
       </div>
     </Link>
   );
@@ -97,14 +97,14 @@ function StatusCount({
   status: AgentStatus["status"];
   count: number;
 }) {
-  const defaultConfig = { color: "bg-zinc-400", bgColor: "bg-zinc-500/10", label: "Unknown" };
+  const defaultConfig = { color: "bg-neutral-400", bgColor: "bg-neutral-500/10", label: "Unknown" };
   const config = statusConfig[status] ?? defaultConfig;
 
   return (
     <div className="flex items-center gap-2">
       <div className={`h-2 w-2 rounded-full ${config.color}`} />
-      <span className="text-sm text-zinc-400">{config.label}</span>
-      <span className="text-sm font-medium text-zinc-200">{count}</span>
+      <span className="text-sm text-neutral-500">{config.label}</span>
+      <span className="text-sm font-medium text-white">{count}</span>
     </div>
   );
 }
@@ -116,23 +116,23 @@ function StatusCount({
 export function AgentOverview({ agents, stats }: AgentOverviewProps) {
   if (agents.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-zinc-100">Agent Overview</h3>
+          <h3 className="text-sm font-medium text-white">Agent Overview</h3>
           <Link
             href="/agents"
-            className="text-xs text-zinc-400 hover:text-zinc-200"
+            className="text-xs text-neutral-500 hover:text-white"
           >
             View all
           </Link>
         </div>
 
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <Bot className="h-10 w-10 text-zinc-700" />
-          <p className="mt-3 text-sm text-zinc-500">No agents spawned</p>
+          <Zap className="h-8 w-8 text-neutral-700" />
+          <p className="mt-3 text-sm text-neutral-500">No agents spawned</p>
           <Link
             href="/agents"
-            className="mt-2 text-xs text-blue-500 hover:text-blue-400"
+            className="mt-2 text-xs text-neutral-400 hover:text-white"
           >
             Spawn an agent
           </Link>
@@ -142,12 +142,12 @@ export function AgentOverview({ agents, stats }: AgentOverviewProps) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-zinc-100">Agent Overview</h3>
+        <h3 className="text-sm font-medium text-white">Agent Overview</h3>
         <Link
           href="/agents"
-          className="text-xs text-zinc-400 hover:text-zinc-200"
+          className="text-xs text-neutral-500 hover:text-white"
         >
           View all
         </Link>
@@ -161,7 +161,7 @@ export function AgentOverview({ agents, stats }: AgentOverviewProps) {
       </div>
 
       {/* Status Counts */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-zinc-800 pt-4">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-neutral-800 pt-4">
         <StatusCount status="WORKING" count={stats.agents.working} />
         <StatusCount status="IDLE" count={stats.agents.idle} />
         <StatusCount status="PAUSED" count={stats.agents.paused} />
