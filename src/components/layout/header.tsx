@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, ListTodo, Menu, Settings } from "lucide-react";
+import { ListTodo, Menu, Settings, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ConnectionStatus } from "@/components/ui/connection-status";
@@ -114,38 +114,37 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
   }, [fetchStats]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-zinc-800 bg-zinc-900/80 px-6 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/[0.06] bg-surface-950/80 px-6 backdrop-blur-xl">
       {/* Left side */}
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100 lg:hidden"
+            className="rounded-lg p-2 text-zinc-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-zinc-300 lg:hidden"
             aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5" />
           </button>
         )}
-        <h1 className="text-xl font-semibold text-zinc-100">{title}</h1>
+        <h1 className="text-lg font-medium text-white">{title}</h1>
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
         {/* Quick Stats */}
         {!isLoading && (
-          <div className="hidden items-center gap-4 sm:flex">
-            <div className="flex items-center gap-2 text-sm">
-              <Bot className="h-4 w-4 text-zinc-500" />
-              <span className="text-zinc-400">Active:</span>
-              <span className="font-medium text-zinc-100">
+          <div className="hidden items-center gap-3 sm:flex">
+            <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-1.5 text-[13px]">
+              <Sparkles className="h-3.5 w-3.5 text-accent-400" />
+              <span className="text-zinc-500">Active</span>
+              <span className="font-medium text-white">
                 {stats.activeAgents}
               </span>
             </div>
-            <div className="h-4 w-px bg-zinc-700" />
-            <div className="flex items-center gap-2 text-sm">
-              <ListTodo className="h-4 w-4 text-zinc-500" />
-              <span className="text-zinc-400">Queued:</span>
-              <span className="font-medium text-zinc-100">
+            <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-1.5 text-[13px]">
+              <ListTodo className="h-3.5 w-3.5 text-amber-400" />
+              <span className="text-zinc-500">Queued</span>
+              <span className="font-medium text-white">
                 {stats.queuedTasks}
               </span>
             </div>
@@ -157,10 +156,10 @@ export function Header({ title, onMenuClick, showMenuButton }: HeaderProps) {
 
         {/* Settings Button */}
         <button
-          className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+          className="rounded-lg p-2 text-zinc-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-zinc-300"
           title="Settings"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-4.5 w-4.5" />
         </button>
       </div>
     </header>

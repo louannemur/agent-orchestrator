@@ -2,10 +2,10 @@
 
 import {
   AlertTriangle,
-  Bot,
   CheckCircle2,
   Clock,
   PlayCircle,
+  Sparkles,
   StopCircle,
   XCircle,
 } from "lucide-react";
@@ -34,29 +34,29 @@ const activityConfig: Record<
   }
 > = {
   agent_started: {
-    icon: <PlayCircle className="h-4 w-4" />,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
+    icon: <PlayCircle className="h-3.5 w-3.5" />,
+    color: "text-accent-400",
+    bgColor: "bg-accent-500/10 border border-accent-500/20",
   },
   agent_stopped: {
-    icon: <StopCircle className="h-4 w-4" />,
-    color: "text-zinc-500",
-    bgColor: "bg-zinc-500/10",
+    icon: <StopCircle className="h-3.5 w-3.5" />,
+    color: "text-zinc-400",
+    bgColor: "bg-zinc-500/10 border border-zinc-500/20",
   },
   task_completed: {
-    icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
+    icon: <CheckCircle2 className="h-3.5 w-3.5" />,
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/10 border border-emerald-500/20",
   },
   task_failed: {
-    icon: <XCircle className="h-4 w-4" />,
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
+    icon: <XCircle className="h-3.5 w-3.5" />,
+    color: "text-red-400",
+    bgColor: "bg-red-500/10 border border-red-500/20",
   },
   exception_created: {
-    icon: <AlertTriangle className="h-4 w-4" />,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
+    icon: <AlertTriangle className="h-3.5 w-3.5" />,
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/10 border border-amber-500/20",
   },
 };
 
@@ -106,14 +106,16 @@ function ActivityItem({ activity }: { activity: RecentActivity }) {
   const href = getHref();
 
   const content = (
-    <div className="flex items-start gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-zinc-800/50">
-      <div className={`mt-0.5 rounded-md p-1.5 ${config.bgColor}`}>
+    <div className="group/item flex items-start gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.04]">
+      <div className={`mt-0.5 rounded-lg p-1.5 ${config.bgColor}`}>
         <span className={config.color}>{config.icon}</span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-zinc-200">{activity.description}</p>
-        <p className="flex items-center gap-1 text-xs text-zinc-500">
-          <Clock className="h-3 w-3" />
+        <p className="truncate text-[13px] text-zinc-300 transition-colors group-hover/item:text-white">
+          {activity.description}
+        </p>
+        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-zinc-500">
+          <Clock className="h-2.5 w-2.5" />
           {getRelativeTime(activity.timestamp)}
         </p>
       </div>
@@ -134,34 +136,50 @@ function ActivityItem({ activity }: { activity: RecentActivity }) {
 export function RecentActivityList({ activities }: RecentActivityProps) {
   if (activities.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-zinc-100">Recent Activity</h3>
-        </div>
+      <div className="group relative overflow-hidden rounded-2xl bg-white/[0.02] p-6 transition-all duration-300 hover:bg-white/[0.04]">
+        <div className="absolute inset-0 rounded-2xl border border-white/[0.06] transition-colors duration-300 group-hover:border-white/[0.1]" />
 
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <Bot className="h-10 w-10 text-zinc-700" />
-          <p className="mt-3 text-sm text-zinc-500">No recent activity</p>
-          <p className="mt-1 text-xs text-zinc-600">
-            Activity will appear here as agents work on tasks
-          </p>
+        <div className="relative">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Recent Activity
+            </h3>
+          </div>
+
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="rounded-xl bg-white/[0.04] p-3">
+              <Sparkles className="h-6 w-6 text-zinc-600" />
+            </div>
+            <p className="mt-4 text-[13px] text-zinc-500">No recent activity</p>
+            <p className="mt-1 text-[11px] text-zinc-600">
+              Activity will appear here as agents work on tasks
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-zinc-100">Recent Activity</h3>
-        <span className="text-xs text-zinc-500">{activities.length} events</span>
-      </div>
+    <div className="group relative overflow-hidden rounded-2xl bg-white/[0.02] p-6 transition-all duration-300 hover:bg-white/[0.04]">
+      <div className="absolute inset-0 rounded-2xl border border-white/[0.06] transition-colors duration-300 group-hover:border-white/[0.1]" />
 
-      <div className="-mx-3 max-h-[400px] overflow-y-auto">
-        <div className="space-y-0.5">
-          {activities.map((activity) => (
-            <ActivityItem key={activity.id} activity={activity} />
-          ))}
+      <div className="relative">
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Recent Activity
+          </h3>
+          <span className="rounded-md bg-white/[0.04] px-2 py-0.5 text-[11px] text-zinc-500">
+            {activities.length} events
+          </span>
+        </div>
+
+        <div className="-mx-3 max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          <div className="space-y-0.5">
+            {activities.map((activity) => (
+              <ActivityItem key={activity.id} activity={activity} />
+            ))}
+          </div>
         </div>
       </div>
     </div>
