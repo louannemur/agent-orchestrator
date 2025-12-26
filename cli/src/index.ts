@@ -40,7 +40,7 @@ interface Config {
 }
 
 const config = new Conf<Config>({
-  projectName: "swarm-agent",
+  projectName: "agent-orchestrator",
   defaults: {
     apiUrl: "",
     runnerToken: "",
@@ -87,8 +87,8 @@ async function apiRequest<T>(
 const program = new Command();
 
 program
-  .name("swarm-agent")
-  .description("Connect your machine to Swarm - AI agent orchestration")
+  .name("agent-orchestrator")
+  .description("Connect your machine to Agent Orchestrator")
   .version("1.0.0");
 
 // ============================================================================
@@ -97,10 +97,10 @@ program
 
 program
   .command("connect <token>")
-  .description("Connect this machine to your Swarm dashboard")
+  .description("Connect this machine to your Agent Orchestrator dashboard")
   .option("-d, --dir <directory>", "Working directory for tasks")
   .action(async (token: string, options: { dir?: string }) => {
-    console.log(chalk.bold("\n  Swarm Agent Setup\n"));
+    console.log(chalk.bold("\n  Agent Orchestrator Setup\n"));
 
     const spinner = ora("Validating connection token...").start();
 
@@ -111,7 +111,7 @@ program
 
       if (!apiUrl || !setupToken) {
         spinner.fail("Invalid token format");
-        console.log(chalk.dim("\n  Get a valid token from your Swarm dashboard.\n"));
+        console.log(chalk.dim("\n  Get a valid token from your dashboard.\n"));
         process.exit(1);
       }
 
@@ -129,7 +129,7 @@ program
 
       if (!response.ok || !json.data) {
         spinner.fail("Invalid or expired token");
-        console.log(chalk.dim("\n  Get a new token from your Swarm dashboard.\n"));
+        console.log(chalk.dim("\n  Get a new token from your dashboard.\n"));
         process.exit(1);
       }
 
@@ -234,7 +234,7 @@ program
       }
       console.log();
       console.log(chalk.bold("  Start the agent with:"));
-      console.log(chalk.cyan(`    npx ${apiUrl}/swarm-agent-cli.tgz start`));
+      console.log(chalk.cyan(`    npx ${apiUrl}/agent-orchestrator-cli.tgz start`));
       console.log();
     } catch (error) {
       spinner.fail("Connection failed");
@@ -258,7 +258,7 @@ program
   .action(async (options: { dir?: string; apiKey?: string; once?: boolean }) => {
     if (!isConfigured()) {
       console.log(chalk.yellow("\n  Not connected."));
-      console.log(chalk.dim("  Copy the connect command from your Swarm dashboard.\n"));
+      console.log(chalk.dim("  Copy the connect command from your dashboard.\n"));
       process.exit(1);
     }
 
@@ -277,11 +277,11 @@ program
       const apiUrl = config.get("apiUrl");
       console.log(chalk.yellow("\n  No execution method configured."));
       console.log(chalk.dim("  Reconnect from your dashboard, or provide an API key:"));
-      console.log(chalk.cyan(`    npx ${apiUrl}/swarm-agent-cli.tgz start --api-key <key>\n`));
+      console.log(chalk.cyan(`    npx ${apiUrl}/agent-orchestrator-cli.tgz start --api-key <key>\n`));
       process.exit(1);
     }
 
-    console.log(chalk.bold("\n  Swarm Agent\n"));
+    console.log(chalk.bold("\n  Agent Orchestrator\n"));
     console.log(chalk.dim(`  Runner: ${runnerName}`));
     console.log(chalk.dim(`  Directory: ${workingDir}`));
     if (hasClaudeCode) {
@@ -382,11 +382,11 @@ program
   .command("status")
   .description("Show connection status")
   .action(async () => {
-    console.log(chalk.bold("\n  Swarm Agent Status\n"));
+    console.log(chalk.bold("\n  Agent Orchestrator Status\n"));
 
     if (!isConfigured()) {
       console.log(chalk.yellow("  Not connected."));
-      console.log(chalk.dim("  Copy the connect command from your Swarm dashboard.\n"));
+      console.log(chalk.dim("  Copy the connect command from your dashboard.\n"));
       return;
     }
 

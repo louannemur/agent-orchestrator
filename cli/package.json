@@ -1,11 +1,11 @@
 {
-  "name": "swarm-agent-cli",
+  "name": "agent-orchestrator-cli",
   "version": "1.0.0",
-  "description": "Connect your machine to Swarm - AI agent orchestration platform",
+  "description": "Connect your machine to Agent Orchestrator - AI agent management platform",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "swarm-agent": "./dist/index.js"
+    "agent-orchestrator": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",

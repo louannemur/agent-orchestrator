@@ -55,7 +55,7 @@ export async function GET() {
     return jsonResponse({
       connectionToken,
       expiresIn: 600, // 10 minutes in seconds
-      command: `npx ${apiUrl}/swarm-agent-cli.tgz connect ${connectionToken}`,
+      command: `npx ${apiUrl}/agent-orchestrator-cli.tgz connect ${connectionToken}`,
     });
   } catch (error) {
     console.error("[GET /api/connect] Error:", error);
