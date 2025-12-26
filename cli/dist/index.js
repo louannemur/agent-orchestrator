@@ -172,7 +172,7 @@ program
         }
         console.log();
         console.log(chalk.bold("  Start the agent with:"));
-        console.log(chalk.cyan("    swarm-agent start"));
+        console.log(chalk.cyan(`    npx ${apiUrl}/swarm-agent-cli.tgz start`));
         console.log();
     }
     catch (error) {
@@ -194,8 +194,8 @@ program
     .option("--once", "Process one task and exit")
     .action(async (options) => {
     if (!isConfigured()) {
-        console.log(chalk.yellow("\n  Not connected. Run 'npx swarm-agent connect <token>' first."));
-        console.log(chalk.dim("  Get your token from the Swarm dashboard.\n"));
+        console.log(chalk.yellow("\n  Not connected."));
+        console.log(chalk.dim("  Copy the connect command from your Swarm dashboard.\n"));
         process.exit(1);
     }
     const workingDir = options.dir || config.get("workingDir") || process.cwd();
@@ -207,9 +207,10 @@ program
     // Verify we have either Claude Code or API key
     const hasClaudeCode = useClaudeCode && (await isClaudeCodeAvailable());
     if (!hasClaudeCode && !apiKey) {
+        const apiUrl = config.get("apiUrl");
         console.log(chalk.yellow("\n  No execution method configured."));
-        console.log(chalk.dim("  Run 'swarm-agent connect <token>' again to set up."));
-        console.log(chalk.dim("  Or provide an API key with: swarm-agent start --api-key <key>\n"));
+        console.log(chalk.dim("  Reconnect from your dashboard, or provide an API key:"));
+        console.log(chalk.cyan(`    npx ${apiUrl}/swarm-agent-cli.tgz start --api-key <key>\n`));
         process.exit(1);
     }
     console.log(chalk.bold("\n  Swarm Agent\n"));
@@ -303,7 +304,7 @@ program
     console.log(chalk.bold("\n  Swarm Agent Status\n"));
     if (!isConfigured()) {
         console.log(chalk.yellow("  Not connected."));
-        console.log(chalk.dim("  Run 'npx swarm-agent connect <token>' to connect.\n"));
+        console.log(chalk.dim("  Copy the connect command from your Swarm dashboard.\n"));
         return;
     }
     const apiUrl = config.get("apiUrl");
