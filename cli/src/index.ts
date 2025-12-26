@@ -314,7 +314,7 @@ program
         );
 
         if (status.availableTasks.count === 0) {
-          spinner.info("No tasks available");
+          spinner.stop();
           if (options.once) break;
           await new Promise((r) => setTimeout(r, 5000));
           continue;

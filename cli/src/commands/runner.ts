@@ -732,7 +732,7 @@ export async function runnerStartCommand(options: RunnerStartOptions): Promise<v
       const status = await apiClient.getStatus();
 
       if (status.availableTasks.count === 0) {
-        spinner.info("No tasks available");
+        spinner.stop();
         if (options.once) break;
         await new Promise((resolve) => setTimeout(resolve, runnerCfg.pollInterval * 1000));
         continue;
@@ -743,7 +743,7 @@ export async function runnerStartCommand(options: RunnerStartOptions): Promise<v
       const claimed = await apiClient.claimTask(workingDir);
 
       if (!claimed) {
-        spinner.info("No tasks to claim");
+        spinner.stop();
         if (options.once) break;
         await new Promise((resolve) => setTimeout(resolve, runnerCfg.pollInterval * 1000));
         continue;
