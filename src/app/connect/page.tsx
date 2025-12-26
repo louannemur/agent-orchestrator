@@ -209,18 +209,17 @@ export default function ConnectPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-green-500">&#x2713;</span>
-                  Anthropic API key (get one at{" "}
-                  <a
-                    href="https://console.anthropic.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    console.anthropic.com
-                  </a>
-                  )
+                  Claude Code CLI (recommended) or Anthropic API key
                 </li>
               </ul>
+              <div className="mt-4 rounded-lg border border-zinc-700 bg-zinc-800/50 p-3">
+                <p className="text-xs text-zinc-400">
+                  <strong className="text-zinc-300">Using Claude Code CLI (no API key needed):</strong>
+                </p>
+                <code className="mt-1 block text-xs text-green-400">
+                  npm install -g @anthropic-ai/claude-code && claude login
+                </code>
+              </div>
             </div>
           </div>
         )}

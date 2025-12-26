@@ -14,6 +14,19 @@ import Conf from "conf";
 const execAsync = promisify(exec);
 
 // ============================================================================
+// Claude Code CLI Check
+// ============================================================================
+
+async function isClaudeCodeAvailable(): Promise<boolean> {
+  try {
+    await execAsync("claude --version", { timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
 // Configuration Store
 // ============================================================================
 
@@ -23,6 +36,7 @@ interface Config {
   runnerName: string;
   workingDir: string;
   anthropicApiKey: string;
+  useClaudeCode: boolean;
 }
 
 const config = new Conf<Config>({
@@ -33,6 +47,7 @@ const config = new Conf<Config>({
     runnerName: "",
     workingDir: "",
     anthropicApiKey: "",
+    useClaudeCode: false,
   },
 });
 
@@ -147,27 +162,56 @@ program
         process.exit(1);
       }
 
-      // Check for existing API key or prompt for one
+      // Check for Claude Code CLI first
+      const hasClaudeCode = await isClaudeCodeAvailable();
+      let useClaudeCode = false;
       let anthropicApiKey = process.env.ANTHROPIC_API_KEY || "";
 
-      if (!anthropicApiKey) {
+      if (hasClaudeCode) {
+        console.log(chalk.green("\n  Claude Code CLI detected!\n"));
         const rl2 = readline.createInterface({
           input: process.stdin,
           output: process.stdout,
         });
 
-        anthropicApiKey = await new Promise<string>((resolve) => {
+        const useIt = await new Promise<string>((resolve) => {
           rl2.question(
-            chalk.dim("  Anthropic API key (get one at console.anthropic.com): "),
+            chalk.dim("  Use Claude Code CLI? (Y/n): "),
             (answer) => {
               rl2.close();
+              resolve(answer.trim().toLowerCase());
+            }
+          );
+        });
+
+        useClaudeCode = useIt !== "n" && useIt !== "no";
+      }
+
+      if (!useClaudeCode && !anthropicApiKey) {
+        if (!hasClaudeCode) {
+          console.log(chalk.yellow("\n  Claude Code CLI not found."));
+          console.log(chalk.dim("  Install it with: npm install -g @anthropic-ai/claude-code"));
+          console.log(chalk.dim("  Then run: claude login\n"));
+          console.log(chalk.dim("  Or provide an Anthropic API key:\n"));
+        }
+
+        const rl3 = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout,
+        });
+
+        anthropicApiKey = await new Promise<string>((resolve) => {
+          rl3.question(
+            chalk.dim("  Anthropic API key (get one at console.anthropic.com): "),
+            (answer) => {
+              rl3.close();
               resolve(answer.trim());
             }
           );
         });
 
         if (!anthropicApiKey) {
-          console.log(chalk.red("\n  API key is required to run the agent.\n"));
+          console.log(chalk.red("\n  Either Claude Code CLI or API key is required.\n"));
           process.exit(1);
         }
       }
@@ -178,11 +222,16 @@ program
       config.set("runnerName", json.data.runnerName);
       config.set("workingDir", workingDir);
       config.set("anthropicApiKey", anthropicApiKey);
+      config.set("useClaudeCode", useClaudeCode);
 
       console.log(chalk.green("\n  Connected successfully!\n"));
       console.log(chalk.dim(`  Runner: ${json.data.runnerName}`));
       console.log(chalk.dim(`  Working directory: ${workingDir}`));
-      console.log(chalk.dim(`  API key: ****${anthropicApiKey.slice(-4)}`));
+      if (useClaudeCode) {
+        console.log(chalk.dim(`  Mode: Claude Code CLI`));
+      } else {
+        console.log(chalk.dim(`  API key: ****${anthropicApiKey.slice(-4)}`));
+      }
       console.log();
       console.log(chalk.bold("  Start the agent with:"));
       console.log(chalk.cyan("    swarm-agent start"));
@@ -216,21 +265,29 @@ program
     const workingDir = options.dir || config.get("workingDir") || process.cwd();
     const runnerToken = config.get("runnerToken");
     const runnerName = config.get("runnerName");
+    const useClaudeCode = config.get("useClaudeCode");
 
     // Get API key from options, env, or saved config
     const apiKey = options.apiKey || process.env.ANTHROPIC_API_KEY || config.get("anthropicApiKey");
 
-    if (!apiKey) {
-      console.log(chalk.yellow("\n  No API key configured."));
-      console.log(chalk.dim("  Run 'swarm-agent connect <token>' again to set up your API key."));
-      console.log(chalk.dim("  Or provide one with: swarm-agent start --api-key <key>\n"));
+    // Verify we have either Claude Code or API key
+    const hasClaudeCode = useClaudeCode && (await isClaudeCodeAvailable());
+
+    if (!hasClaudeCode && !apiKey) {
+      console.log(chalk.yellow("\n  No execution method configured."));
+      console.log(chalk.dim("  Run 'swarm-agent connect <token>' again to set up."));
+      console.log(chalk.dim("  Or provide an API key with: swarm-agent start --api-key <key>\n"));
       process.exit(1);
     }
 
     console.log(chalk.bold("\n  Swarm Agent\n"));
     console.log(chalk.dim(`  Runner: ${runnerName}`));
     console.log(chalk.dim(`  Directory: ${workingDir}`));
-    console.log(chalk.dim(`  API key: ****${apiKey.slice(-4)}`));
+    if (hasClaudeCode) {
+      console.log(chalk.dim(`  Mode: Claude Code CLI`));
+    } else {
+      console.log(chalk.dim(`  API key: ****${apiKey.slice(-4)}`));
+    }
     console.log();
 
     let running = true;
@@ -239,8 +296,11 @@ program
       running = false;
     });
 
-    // Initialize Anthropic
-    const anthropic = new Anthropic({ apiKey });
+    // Initialize Anthropic if not using Claude Code
+    let anthropic: Anthropic | null = null;
+    if (!hasClaudeCode && apiKey) {
+      anthropic = new Anthropic({ apiKey });
+    }
 
     while (running) {
       const spinner = ora("Checking for tasks...").start();
@@ -276,7 +336,12 @@ program
         spinner.succeed(`Task: ${claimed.task.title}`);
 
         // Execute task
-        const result = await executeWithApi(claimed.task, workingDir, anthropic);
+        let result: { success: boolean; summary?: string; error?: string };
+        if (hasClaudeCode) {
+          result = await executeWithClaudeCode(claimed.task, workingDir);
+        } else {
+          result = await executeWithApi(claimed.task, workingDir, anthropic!);
+        }
 
         // Report completion
         await apiRequest("POST", "/api/runner/complete", {
@@ -328,12 +393,18 @@ program
     const runnerName = config.get("runnerName");
     const workingDir = config.get("workingDir");
     const anthropicApiKey = config.get("anthropicApiKey");
+    const useClaudeCode = config.get("useClaudeCode");
+    const hasClaudeCode = useClaudeCode && (await isClaudeCodeAvailable());
 
     console.log(`  Connected: ${chalk.green("Yes")}`);
     console.log(`  Runner: ${chalk.cyan(runnerName)}`);
     console.log(`  Server: ${chalk.dim(apiUrl)}`);
     console.log(`  Directory: ${chalk.dim(workingDir)}`);
-    console.log(`  API key: ${anthropicApiKey ? chalk.green(`****${anthropicApiKey.slice(-4)}`) : chalk.yellow("not set")}`);
+    if (useClaudeCode) {
+      console.log(`  Mode: ${hasClaudeCode ? chalk.green("Claude Code CLI") : chalk.yellow("Claude Code (not found)")}`);
+    } else {
+      console.log(`  API key: ${anthropicApiKey ? chalk.green(`****${anthropicApiKey.slice(-4)}`) : chalk.yellow("not set")}`);
+    }
 
     // Check server status
     const spinner = ora("Checking server...").start();
@@ -373,6 +444,45 @@ interface TaskInfo {
   title: string;
   description: string;
   filesHint?: string[];
+}
+
+async function executeWithClaudeCode(
+  task: TaskInfo,
+  workingDir: string
+): Promise<{ success: boolean; summary?: string; error?: string }> {
+  const prompt = `You are working on a task. Here are the details:
+
+**Task:** ${task.title}
+
+**Description:**
+${task.description}
+
+**Working Directory:** ${workingDir}
+${task.filesHint?.length ? `\n**Relevant files:**\n${task.filesHint.map((f) => `- ${f}`).join("\n")}` : ""}
+
+Please complete this task. When done, summarize what you accomplished.`;
+
+  console.log(chalk.dim("  Running with Claude Code CLI..."));
+
+  try {
+    const { stdout } = await execAsync(
+      `claude -p "${prompt.replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`,
+      {
+        cwd: workingDir,
+        timeout: 10 * 60 * 1000,
+        maxBuffer: 10 * 1024 * 1024,
+      }
+    );
+
+    const lines = stdout.trim().split("\n");
+    const summary = lines.slice(-3).join(" ").slice(0, 500) || "Completed";
+    return { success: true, summary };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 async function executeWithApi(
