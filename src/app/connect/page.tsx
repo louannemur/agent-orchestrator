@@ -209,7 +209,16 @@ export default function ConnectPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-green-500">&#x2713;</span>
-                  Claude Code CLI (recommended) or Anthropic API key
+                  Anthropic API key (get one at{" "}
+                  <a
+                    href="https://console.anthropic.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    console.anthropic.com
+                  </a>
+                  )
                 </li>
               </ul>
             </div>
