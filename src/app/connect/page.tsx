@@ -117,13 +117,15 @@ export default function ConnectPage() {
                 Step 1: Install the CLI
               </h2>
               <p className="mb-4 text-sm text-neutral-400">
-                First, install the Agent Orchestrator CLI globally:
+                From the project root directory, install the CLI globally:
               </p>
-              <code className="block rounded bg-neutral-900 px-3 py-2 font-mono text-xs text-emerald-400">
-                cd /path/to/agent-orchestrator/cli && npm run build && npm install -g .
-              </code>
+              <div className="space-y-2">
+                <code className="block rounded bg-neutral-900 px-3 py-2 font-mono text-xs text-emerald-400">
+                  cd cli && npm install && npm run build && npm install -g .
+                </code>
+              </div>
               <p className="mt-3 text-xs text-neutral-500">
-                This installs the <code className="text-neutral-400">agent-orchestrator</code> command.
+                This installs the <code className="text-neutral-400">agent-orchestrator</code> command globally.
               </p>
             </div>
 
