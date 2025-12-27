@@ -172,7 +172,7 @@ program
         }
         console.log();
         console.log(chalk.bold("  Start the agent with:"));
-        console.log(chalk.cyan(`    npx ${apiUrl}/agent-orchestrator-cli.tgz start`));
+        console.log(chalk.cyan("    agent-orchestrator start"));
         console.log();
     }
     catch (error) {
@@ -207,10 +207,9 @@ program
     // Verify we have either Claude Code or API key
     const hasClaudeCode = useClaudeCode && (await isClaudeCodeAvailable());
     if (!hasClaudeCode && !apiKey) {
-        const apiUrl = config.get("apiUrl");
         console.log(chalk.yellow("\n  No execution method configured."));
         console.log(chalk.dim("  Reconnect from your dashboard, or provide an API key:"));
-        console.log(chalk.cyan(`    npx ${apiUrl}/agent-orchestrator-cli.tgz start --api-key <key>\n`));
+        console.log(chalk.cyan("    agent-orchestrator start --api-key <key>\n"));
         process.exit(1);
     }
     console.log(chalk.bold("\n  Agent Orchestrator\n"));

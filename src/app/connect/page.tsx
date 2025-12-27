@@ -111,21 +111,37 @@ export default function ConnectPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Prerequisites */}
+            {/* Step 1: Install CLI */}
             <div className="rounded-lg border border-neutral-800 bg-black p-5">
               <h2 className="mb-4 text-sm font-medium text-white">
-                Before You Start
+                Step 1: Install the CLI
               </h2>
               <p className="mb-4 text-sm text-neutral-400">
-                Install Claude Code CLI to run tasks without an API key:
+                First, install the Agent Orchestrator CLI globally:
+              </p>
+              <code className="block rounded bg-neutral-900 px-3 py-2 font-mono text-xs text-emerald-400">
+                cd /path/to/agent-orchestrator/cli && npm run build && npm install -g .
+              </code>
+              <p className="mt-3 text-xs text-neutral-500">
+                This installs the <code className="text-neutral-400">agent-orchestrator</code> command.
+              </p>
+            </div>
+
+            {/* Step 2: Claude Code (optional) */}
+            <div className="rounded-lg border border-neutral-800 bg-black p-5">
+              <h2 className="mb-4 text-sm font-medium text-white">
+                Step 2: Set Up Claude Code (Recommended)
+              </h2>
+              <p className="mb-4 text-sm text-neutral-400">
+                Install Claude Code to run tasks without an API key:
               </p>
               <div className="space-y-3">
                 <div className="flex gap-3">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-800 text-xs text-neutral-400">
-                    1
+                    a
                   </span>
                   <div>
-                    <p className="text-sm text-neutral-300">Install the CLI</p>
+                    <p className="text-sm text-neutral-300">Install Claude Code</p>
                     <code className="mt-1.5 block rounded bg-neutral-900 px-3 py-2 font-mono text-xs text-emerald-400">
                       npm install -g @anthropic-ai/claude-code
                     </code>
@@ -133,7 +149,7 @@ export default function ConnectPage() {
                 </div>
                 <div className="flex gap-3">
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-800 text-xs text-neutral-400">
-                    2
+                    b
                   </span>
                   <div>
                     <p className="text-sm text-neutral-300">
@@ -146,7 +162,7 @@ export default function ConnectPage() {
                 </div>
               </div>
               <p className="mt-4 text-xs text-neutral-500">
-                Don&apos;t have Claude Code? Use an{" "}
+                Skip this step if you prefer to use an{" "}
                 <a
                   href="https://console.anthropic.com"
                   target="_blank"
@@ -159,9 +175,17 @@ export default function ConnectPage() {
               </p>
             </div>
 
-            {/* Command Box */}
+            {/* Step 3: Connect - Command Box */}
             <div className="rounded-lg border border-neutral-800 bg-black">
-              <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2.5">
+              <div className="border-b border-neutral-800 px-5 py-4">
+                <h2 className="text-sm font-medium text-white">
+                  Step 3: Connect Your Machine
+                </h2>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Run this command in your terminal:
+                </p>
+              </div>
+              <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/50 px-4 py-2.5">
                 <div className="flex items-center gap-2">
                   <Terminal className="h-4 w-4 text-neutral-500" />
                   <span className="text-sm text-neutral-500">Terminal</span>
@@ -192,70 +216,38 @@ export default function ConnectPage() {
                   {command}
                 </code>
               </div>
+              <div className="flex items-center justify-between border-t border-neutral-800 px-4 py-3">
+                <span className="text-sm text-neutral-500">
+                  {expiresIn > 0 ? (
+                    <>Expires in {formatTime(expiresIn)}</>
+                  ) : (
+                    <span className="text-amber-500">Token expired</span>
+                  )}
+                </span>
+                <button
+                  onClick={generateToken}
+                  className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Regenerate
+                </button>
+              </div>
             </div>
 
-            {/* Timer and Regenerate */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-neutral-500">
-                {expiresIn > 0 ? (
-                  <>Expires in {formatTime(expiresIn)}</>
-                ) : (
-                  <span className="text-amber-500">Token expired</span>
-                )}
-              </span>
-              <button
-                onClick={generateToken}
-                className="flex items-center gap-2 rounded-md border border-neutral-800 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-900"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Regenerate
-              </button>
-            </div>
-
-            {/* Steps */}
+            {/* Step 4: Start */}
             <div className="rounded-lg border border-neutral-800 bg-black p-5">
               <h2 className="mb-4 text-sm font-medium text-white">
-                What happens next?
+                Step 4: Start the Agent
               </h2>
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-800 text-xs text-neutral-400">
-                    1
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-white">Run the command</p>
-                    <p className="text-sm text-neutral-500">
-                      Open your terminal and paste the command above
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-800 text-xs text-neutral-400">
-                    2
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      Choose your project directory
-                    </p>
-                    <p className="text-sm text-neutral-500">
-                      Select where the agent will work on tasks
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-neutral-800 text-xs text-neutral-400">
-                    3
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      You&apos;re connected!
-                    </p>
-                    <p className="text-sm text-neutral-500">
-                      The runner will start processing tasks automatically
-                    </p>
-                  </div>
-                </li>
-              </ol>
+              <p className="mb-4 text-sm text-neutral-400">
+                After connecting, start the agent to begin processing tasks:
+              </p>
+              <code className="block rounded bg-neutral-900 px-3 py-2 font-mono text-xs text-emerald-400">
+                agent-orchestrator start
+              </code>
+              <p className="mt-4 text-xs text-neutral-500">
+                The agent will poll for new tasks and execute them in your chosen working directory.
+              </p>
             </div>
           </div>
         )}
