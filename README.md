@@ -13,13 +13,20 @@ A multi-agent orchestration platform for managing AI-powered coding agents. This
 
 ## Quick Start
 
+There are two parts to Agent Orchestrator:
+
+1. **Dashboard** - The web UI for managing tasks and monitoring agents
+2. **Agent Runners** - Local machines that execute tasks using Claude
+
 ### Prerequisites
 
 - Node.js 18+
-- PostgreSQL database (Neon recommended for serverless)
+- PostgreSQL database ([Neon](https://neon.tech) recommended for serverless)
 - npm or yarn
 
-### Local Development
+---
+
+### Part 1: Set Up the Dashboard
 
 1. **Clone the repository**
    ```bash
@@ -37,7 +44,7 @@ A multi-agent orchestration platform for managing AI-powered coding agents. This
    cp .env.example .env
    ```
 
-   Edit `.env` with your database connection:
+   Edit `.env` with your database connection (see `.env.example` for all options):
    ```env
    DATABASE_URL="postgresql://user:password@host:5432/database?sslmode=require"
    ```
@@ -52,9 +59,40 @@ A multi-agent orchestration platform for managing AI-powered coding agents. This
    npm run dev
    ```
 
-6. **Open the dashboard**
+6. **Open the dashboard** at [http://localhost:3000](http://localhost:3000)
 
-   Navigate to [http://localhost:3000](http://localhost:3000)
+---
+
+### Part 2: Connect an Agent Runner
+
+Once the dashboard is running, you can connect machines to process tasks.
+
+1. **Install the CLI** (from the project root)
+   ```bash
+   cd cli && npm install && npm run build && npm install -g .
+   ```
+
+2. **Set up Claude Code** (recommended) or have an Anthropic API key ready
+   ```bash
+   npm install -g @anthropic-ai/claude-code
+   claude login
+   ```
+
+3. **Get a connection token** from the dashboard
+   - Go to [http://localhost:3000/connect](http://localhost:3000/connect)
+   - Copy the generated command
+
+4. **Connect your machine**
+   ```bash
+   agent-orchestrator connect <token>
+   ```
+
+5. **Start processing tasks**
+   ```bash
+   agent-orchestrator start
+   ```
+
+The agent will poll for tasks and execute them in your working directory.
 
 ## Deployment
 
@@ -196,18 +234,36 @@ agent-orchestrator/
 
 ## CLI Tool
 
-The `swarm` CLI provides command-line management:
+The `agent-orchestrator` CLI connects your machine to the dashboard and processes tasks.
+
+### Installation
+
+From the project root:
+```bash
+cd cli && npm install && npm run build && npm install -g .
+```
+
+### Commands
 
 ```bash
-# List agents
-npx ts-node cli/index.ts agent list
+# Connect this machine to the dashboard
+agent-orchestrator connect <token>
 
-# Create a task
-npx ts-node cli/index.ts task create "Fix bug in login" --priority 0
+# Start processing tasks
+agent-orchestrator start
 
-# View exceptions
-npx ts-node cli/index.ts exception list --status OPEN
+# Start with options
+agent-orchestrator start --dir /path/to/workspace --once
 ```
+
+### Options
+
+| Command | Flag | Description |
+|---------|------|-------------|
+| `start` | `-d, --dir` | Working directory for task execution |
+| `start` | `-k, --api-key` | Anthropic API key (if not using Claude Code) |
+| `start` | `--once` | Process one task and exit |
+| `connect` | `-d, --dir` | Set default working directory |
 
 ## Development
 

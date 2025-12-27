@@ -85,13 +85,29 @@ export default function ConnectPage() {
           Back to Dashboard
         </Link>
 
-        <div className="mb-10">
+        <div className="mb-8">
           <h1 className="text-2xl font-semibold text-white">
             Connect Your Machine
           </h1>
           <p className="mt-2 text-sm text-neutral-400">
-            Run the command below in your terminal to connect this machine as an
-            agent runner.
+            Follow the steps below to set up this machine as an agent runner.
+            Once connected, it will process tasks from the dashboard.
+          </p>
+        </div>
+
+        {/* Prerequisites */}
+        <div className="mb-6 rounded-lg border border-neutral-800 bg-neutral-900/30 px-4 py-3">
+          <p className="text-xs text-neutral-400">
+            <span className="font-medium text-neutral-300">Prerequisites:</span>{" "}
+            Node.js 18+ installed.{" "}
+            <a
+              href="https://nodejs.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-300 underline hover:text-white"
+            >
+              Download Node.js
+            </a>
           </p>
         </div>
 
@@ -249,6 +265,39 @@ export default function ConnectPage() {
               </code>
               <p className="mt-4 text-xs text-neutral-500">
                 The agent will poll for new tasks and execute them in your chosen working directory.
+              </p>
+            </div>
+
+            {/* Help Section */}
+            <div className="rounded-lg border border-neutral-800 bg-black p-5">
+              <h2 className="mb-3 text-sm font-medium text-white">
+                Need Help?
+              </h2>
+              <ul className="space-y-2 text-sm text-neutral-400">
+                <li>
+                  <span className="text-neutral-500">Command not found?</span>{" "}
+                  Make sure you ran the CLI install command from the project root.
+                </li>
+                <li>
+                  <span className="text-neutral-500">Token expired?</span>{" "}
+                  Click &quot;Regenerate&quot; above to get a new one.
+                </li>
+                <li>
+                  <span className="text-neutral-500">Connection failed?</span>{" "}
+                  Check that this dashboard is accessible from your terminal.
+                </li>
+              </ul>
+              <p className="mt-4 text-xs text-neutral-500">
+                See the{" "}
+                <a
+                  href="https://github.com/your-org/agent-orchestrator#cli-tool"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-neutral-400 underline hover:text-white"
+                >
+                  CLI documentation
+                </a>{" "}
+                for more options.
               </p>
             </div>
           </div>
